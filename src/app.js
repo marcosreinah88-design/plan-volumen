@@ -909,7 +909,6 @@ function renderProgreso(){
   $("pgrec").innerHTML='<div class="sec-h"><h3 style="font-size:1.05rem">Mejores series</h3><span class="r eyebrow">1RM estimado</span></div>'+(ids.length?'<ul class="rec">'+ids.map(function(id){var b=B[id],dd=fromIso(b.d);return '<li><button type="button" class="recb" data-exs="'+id+'"><span>'+b.n+'<small>'+dd.getDate()+' '+MES3[dd.getMonth()]+'</small></span><span>'+kgs(b.kg)+' lb × '+b.r+' · <b>'+kgs(b.e)+'</b></span></button></li>';}).join("")+'</ul>':'<p class="empty">Cuando marques series en Entreno, aquí aparece tu mejor serie de cada ejercicio.</p>');
   renderDias();renderExStats();
   renderTanita();
-  renderBackup();
   var bi=blockInfo(TODAY);$("pgsub").textContent=bi.pre?"":"Bloque "+bi.block+" · semana "+(bi.wk+1);
 }
 var fmtI=new Intl.NumberFormat("es-MX",{maximumFractionDigits:0});
@@ -1201,11 +1200,12 @@ $("pgw").addEventListener("click",function(e){var u=e.target.closest("[data-u]")
 /* ================= respaldo (app instalable) ================= */
 function allDocs(){var out={};try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf("pvm:")===0){var kk=k.slice(4);if(/^(d-\d{4}-\d\d-\d\d|weights|best|last|shop|cfg|tanita)$/.test(kk)){var v=lsGet(kk);if(v)out[kk]=v;}}}}catch(e){}return out;}
 function bkLast(){try{return +localStorage.getItem("pvmbk:last")||0;}catch(e){return 0;}}
-function renderBackup(){var el=$("pgbk");if(!el)return;if(!PWA){el.hidden=true;return;}el.hidden=false;
+function renderBackup(){if(view==="ajustes")renderAjustes();}
+function renderBackupCard(){var el=$("pgbk");if(!el)return;
   var L=bkLast(),n=Object.keys(allDocs()).filter(function(k){return k.indexOf("d-")===0;}).length,old=!L||Date.now()-L>7*864e5;
   el.innerHTML='<div class="sec-h"><h3 style="font-size:1.05rem">Respaldo</h3><span class="r eyebrow">'+n+' días guardados</span></div><p class="small muted">Tus registros viven en este equipo. Guarda un respaldo cada semana (en Archivos o iCloud) por si cambias de celular o borras la app.</p>'+
     (old?'<p class="note">'+(L?'Tu último respaldo fue el '+new Date(L).getDate()+' '+MES3[new Date(L).getMonth()]+'. Ya toca otro.':'Todavía no tienes respaldo.')+'</p>':'<p class="small" style="color:var(--ok)">Último respaldo: '+new Date(L).getDate()+' '+MES3[new Date(L).getMonth()]+'</p>')+
-    '<div class="gbtns"><button class="btn pri" type="button" data-bk="exp">Guardar respaldo</button><label class="btn ghost" style="cursor:pointer">Cargar respaldo<input type="file" accept=".json,application/json" id="bkin" hidden></label></div>'+ghCard();}
+    '<div class="gbtns"><button class="btn pri" type="button" data-bk="exp">Guardar respaldo</button><label class="btn ghost" style="cursor:pointer">Cargar respaldo<input type="file" accept=".json,application/json" id="bkin" hidden></label></div>'+'';}
 function bkExport(){var D={app:"plan-volumen",v:1,at:new Date().toISOString(),docs:allDocs()},txt=JSON.stringify(D),nm="plan-volumen-respaldo-"+iso(TODAY)+".json";
   var done=function(){try{localStorage.setItem("pvmbk:last",String(Date.now()));}catch(e){}renderBackup();toast("Respaldo listo");};
   try{var f=new File([txt],nm,{type:"application/json"});if(navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f],title:"Respaldo Plan de Volumen"}).then(done,function(){});return;}}catch(e){}
@@ -1266,7 +1266,7 @@ function ghSync(manual){
   }).then(function(changed){
     GH.busy=0;GH.err="";ghSet("last",String(Date.now()));setSync("on");
     if(changed){var a=document.activeElement;if(!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)))renderAll();}
-    else if(view==="progreso")renderBackup();
+    else if(view==="ajustes")renderBackup();
     if(manual)toast("Sincronizado");
     if(GH.again){GH.again=0;ghSoon();}
   },function(e){
@@ -1274,7 +1274,7 @@ function ghSync(manual){
     if(e&&(e.status===401||e.status===403)){GH.err="GitHub no aceptó tu clave. Crea una nueva (con permiso gist) y pégala otra vez.";}
     else GH.err="No hay conexión con GitHub. Lo que anotes se guarda aquí y se sube cuando vuelva el internet.";
     if(manual||e&&e.status)toast(GH.err);
-    if(view==="progreso")renderBackup();
+    if(view==="ajustes")renderBackup();
   });
 }
 /* ================= avisos al celular =================
@@ -1285,7 +1285,7 @@ function avBuild(){
   var out=[],now=Date.now(),W=(sget("weights")||{e:[]}).e||[];
   for(var i=0;i<7;i++){(function(d){
     var dd=sget(dk(d))||{m:{},s:{}},m=dd.m||{},hr=HRS[DAYS[d.getDay()].h],id=iso(d);
-    var add=function(min,tag,t,b){var x=+d+min*60000;if(x>now)out.push({at:x,tag:id+"-"+tag,t:t,b:b});};
+    var add=function(min,tag,t,b){var c=/^(des|col|com|pre|cen)$/.test(tag)?"meal":(tag==="batch"||tag==="prep")?"cocina":tag;if(!avCatOn(c))return;var x=+d+min*60000;if(x>now)out.push({at:x,tag:id+"-"+tag,t:t,b:b});};
     dayItems(d).forEach(function(x){
       if(x.type==="meal"&&!m[x.k]){var tt=itemTitle(d,x);add(x.s,x.k,mealName(d,x.k)+" · "+x.a,tt[0].replace(/^[^:]*:\s*/,"")+" · "+tt[1]);}
       else if(x.type==="cre"&&!m.cre)add(x.post?x.s:x.s-1,"cre","Creatina · 5 g",x.post?"Al terminar el entreno, en agua o en tu batido":"Con el desayuno");
@@ -1330,7 +1330,7 @@ function avEnable(){
   }).then(function(){ghSet("av","1");renderBackup();toast("Avisos activados en este celular");},function(e){if(e!==0){toast("No se pudieron activar los avisos. Revisa tu internet e inténtalo otra vez");}renderBackup();});
 }
 function avCard(){
-  var h='<div class="ghs"><h4>Avisos en el celular</h4>';
+  var h='<div class="ghs gfirst">';
   var code='<p class="small muted">Código para el secreto <b>'+AV.secret+'</b> en GitHub:</p><div class="ghf"><input readonly value="'+ghGet("id")+'" aria-label="Código del gist" id="avid"><button class="btn ghost" type="button" data-av="copy">Copiar</button></div><p class="small"><a href="https://github.com/marcosreinah88-design/plan-volumen/settings/secrets/actions/new" target="_blank" rel="noopener">Abrir la página del secreto en GitHub</a>: en Name escribe '+AV.secret+', en Secret pega el código y toca Add secret.</p>';
   if(!ghGet("id"))code='';
   if(!avCan()||!avStandalone())return h+code+'<p class="small muted">Los avisos funcionan en el iPhone con la app instalada: en Safari toca Compartir → Agregar a pantalla de inicio y ábrela desde el ícono. Ahí aparece el botón para activarlos.</p></div>';
@@ -1344,12 +1344,12 @@ document.addEventListener("click",function(e){var b=e.target.closest("[data-av]"
   else if(a==="copy"){var v=ghGet("id");(navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(function(){toast("Código copiado");},function(){$("avid").select();toast("Selecciona y copia el código");});}
   else if(a==="off"){navigator.serviceWorker.ready.then(function(r){return r.pushManager.getSubscription();}).then(function(s){return s&&s.unsubscribe();}).catch(function(){}).then(function(){ghSet("av","");renderBackup();toast("Avisos apagados en este celular");});}});
 function ghCard(){
-  if(!ghGet("tok"))return '<div class="ghs"><h4>Sincronizar Mac y celular</h4><p class="small muted">Para que lo que anotes en un equipo aparezca en el otro, conecta tu GitHub. Se hace una sola vez en cada equipo:</p>'+
+  if(!ghGet("tok"))return '<div class="ghs gfirst"><p class="small muted">Para que lo que anotes en un equipo aparezca en el otro, conecta tu GitHub. Se hace una sola vez en cada equipo:</p>'+
     '<ol class="small"><li>Toca <a href="https://github.com/settings/tokens/new?scopes=gist&amp;description=Plan%20de%20Volumen" target="_blank" rel="noopener">Crear clave en GitHub</a> (ya trae marcado solo el permiso <b>gist</b>).</li><li>En <b>Expiration</b> elige <b>No expiration</b>, baja y toca <b>Generate token</b>.</li><li>Copia la clave (empieza con <b>ghp_</b>) y pégala aquí. Guárdala en Notas para pegarla también en el otro equipo.</li></ol>'+
     '<form class="ghf" id="ghf"><input id="ghtok" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ghp_…" aria-label="Clave de GitHub"><button class="btn pri" type="submit">Conectar</button></form></div>';
   var L=+ghGet("last")||0;
-  return '<div class="ghs"><h4>Sincronizar Mac y celular</h4>'+(GH.err?'<p class="note">'+GH.err+'</p>':'<p class="small" style="color:var(--ok)">Conectado'+(L?' · última vez '+pad(new Date(L).getHours())+':'+pad(new Date(L).getMinutes()):'')+'</p>')+
-    '<p class="small muted">Se sincroniza solo cada vez que anotas algo y al abrir la app.</p><div class="gbtns"><button class="btn ghost" type="button" data-gh="now">Sincronizar ahora</button><button class="btn ghost" type="button" data-gh="off">Desconectar</button></div></div>'+avCard();
+  return '<div class="ghs gfirst">'+(GH.err?'<p class="note">'+GH.err+'</p>':'<p class="small" style="color:var(--ok)">Conectado'+(L?' · última vez '+pad(new Date(L).getHours())+':'+pad(new Date(L).getMinutes()):'')+'</p>')+
+    '<p class="small muted">Se sincroniza solo cada vez que anotas algo y al abrir la app.</p><div class="gbtns"><button class="btn ghost" type="button" data-gh="now">Sincronizar ahora</button><button class="btn ghost" type="button" data-gh="off">Desconectar</button></div></div>';
 }
 document.addEventListener("submit",function(e){if(e.target.id!=="ghf")return;e.preventDefault();var v=($("ghtok").value||"").trim();
   if(!/^(ghp_|github_pat_)[A-Za-z0-9_]{20,}$/.test(v)){toast("Esa no parece una clave de GitHub (empieza con ghp_)");return;}
@@ -1379,7 +1379,41 @@ function renderGuia(){
 }
 
 /* ================= navegación ================= */
-var R={hoy:renderHoy,entreno:renderEntreno,comida:renderComida,progreso:renderProgreso,guia:renderGuia};
+/* ================= AJUSTES ================= */
+var APPV="dev";
+var AVCAT=[["meal","Comidas","A la hora de cada comida"],["cre","Creatina","Al terminar el entreno (domingo: con el desayuno)"],["gym","Gym","30 minutos antes de entrenar"],["med","Medicamento","15 minutos antes del desayuno"],["peso","Pésate","Lunes, miércoles y viernes, 25 min antes del desayuno"],["cocina","Batch y prep","Domingo 12:00 y miércoles 21:30"]];
+function avCatOn(c){var C=sget("cfg")||{};return !(C.avo&&C.avo[c]===false);}
+function ajRow(h,t,body){return '<div class="card ajc" style="display:grid;gap:10px"><div class="sec-h"><h3 style="font-size:1.05rem">'+h+'</h3>'+(t?'<span class="r eyebrow">'+t+'</span>':'')+'</div>'+body+'</div>';}
+function renderAjustes(){
+  var C=sget("cfg")||{},th=(function(){try{return localStorage.getItem("pvm:theme")||"auto";}catch(e){return "auto";}})();
+  var seg=function(attr,cur,opts){return '<div class="seg ajseg" role="group">'+opts.map(function(o){return '<button type="button" '+attr+'="'+o[0]+'" aria-pressed="'+(cur===o[0])+'">'+o[1]+'</button>';}).join("")+'</div>';};
+  var h='';
+  if(PWA){
+    h+=ajRow("Sincronización",ghOn()?"Conectada":"Apagada",ghCard(true));
+    h+=ajRow("Avisos",avOn()?"Activos aquí":"",avCard()+'<div class="ghs"><h4>Qué avisos quieres</h4><p class="small muted">Vale para todos tus equipos.</p><div class="avcats">'+AVCAT.map(function(c){var on=avCatOn(c[0]);return '<button type="button" class="avcat" data-avc="'+c[0]+'" aria-pressed="'+on+'"><span class="sw" aria-hidden="true"><i></i></span><span><b>'+c[1]+'</b><small>'+c[2]+'</small></span></button>';}).join("")+'</div></div>');
+    h+='<div class="card" id="pgbk" style="display:grid;gap:10px"></div>';
+  }
+  h+=ajRow("Unidades y apariencia","",'<div class="ajl"><span><b>Peso corporal</b><small>Las cargas del gym siempre van en lb</small></span>'+seg("data-ajbw",C.bw==="lb"?"lb":"kg",[["kg","kg"],["lb","lb"]])+'</div>'+
+    '<div class="ajl"><span><b>Tema</b><small>Automático sigue el de tu equipo</small></span>'+seg("data-ajth",th,[["auto","Auto"],["light","Claro"],["dark","Oscuro"]])+'</div>');
+  var bi=blockInfo(TODAY);
+  h+=ajRow("Tu plan","",'<ul class="ajp"><li><span>Calorías al día</span><b>'+fmt.format(KCAL)+' kcal</b></li><li><span>Proteína al día</span><b>'+PROT+' g</b></li><li><span>Bloque actual</span><b>'+(bi.pre?'Empieza el lunes 2 nov':'Bloque '+bi.block+' · semana '+(bi.wk+1)+' de 6')+'</b></li>'+
+    ["lun","mar","mie","jue","vie","sab"].map(function(k){return '<li><span>Gym '+DAYS[KEYS.indexOf(k)].n.toLowerCase()+'</span><b>'+(GD[k]?GD[k].t:'')+' · '+GYMT[k]+'</b></li>';}).join("")+
+    '<li><span>Primera revisión de peso</span><b>Domingo 22 nov</b></li></ul><p class="small muted">Para cambiar la rutina, la dieta o los horarios, pídemelo en el chat y se actualiza aquí sola.</p>');
+  h+=ajRow("Bibliografía","",'<details class="src-d"><summary>Fuentes de la rutina</summary>'+FR.gymsrc+'</details><details class="src-d"><summary>Fuentes de la dieta</summary>'+FR.dietsrc+'</details>');
+  h+=ajRow("Acerca de la app","",'<ul class="ajp"><li><span>Versión</span><b class="mono">'+APPV+'</b></li><li><span>Dónde se guardan tus datos</span><b>'+(PWA?(ghOn()?'En este equipo y en tu GitHub':'Solo en este equipo'):'En tu cuenta de Claude')+'</b></li></ul>'+
+    (PWA?'<p class="small muted">La app se actualiza sola cada vez que la abres con internet. Si acabamos de cambiar algo y no lo ves, toca el botón.</p><div class="gbtns"><button class="btn ghost" type="button" data-aj="upd">Buscar actualización</button></div>':''));
+  $("ajbody").innerHTML=h;
+  if(PWA)renderBackupCard();
+}
+document.addEventListener("click",function(e){
+  var t=e.target;
+  var b=t.closest("[data-ajbw]");if(b){var C=sget("cfg")||{};C.bw=b.dataset.ajbw;sput("cfg",C);renderAjustes();toast("Peso corporal en "+C.bw);return;}
+  b=t.closest("[data-ajth]");if(b){var v=b.dataset.ajth;try{if(v==="auto")localStorage.removeItem("pvm:theme");else localStorage.setItem("pvm:theme",v);}catch(er){}if(v==="auto")document.documentElement.removeAttribute("data-theme");else document.documentElement.setAttribute("data-theme",v);paintTheme();renderAjustes();return;}
+  b=t.closest("[data-avc]");if(b){var C2=sget("cfg")||{};C2.avo=C2.avo||{};var c=b.dataset.avc;C2.avo[c]=!avCatOn(c);sput("cfg",C2);renderAjustes();return;}
+  b=t.closest("[data-aj]");if(b&&b.dataset.aj==="upd"){toast("Buscando…");var fin=function(){location.reload();};if(navigator.serviceWorker&&navigator.serviceWorker.getRegistration){navigator.serviceWorker.getRegistration().then(function(r){return r&&r.update();}).then(function(){setTimeout(fin,900);},fin);}else fin();}
+});
+$("setbtn").addEventListener("click",function(){show(view==="ajustes"?"hoy":"ajustes");});
+var R={hoy:renderHoy,entreno:renderEntreno,comida:renderComida,progreso:renderProgreso,guia:renderGuia,ajustes:renderAjustes};
 function show(v){
   view=v;
   Object.keys(R).forEach(function(k){$("v-"+k).hidden=k!==v;});

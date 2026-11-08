@@ -9,6 +9,8 @@ css=open(base+'src/app.css',encoding='utf-8').read()
 js=open(base+'src/app.js',encoding='utf-8').read().replace('/*DIET*/',open(base+'src/diet.js',encoding='utf-8').read())
 assert js.count('var PWA=false;')==1
 js=js.replace('var PWA=false;','var PWA=true;')
+import datetime
+js=js.replace('var APPV="dev";','var APPV="'+datetime.date.today().strftime('%Y.%m.%d')+'-'+hashlib.sha1(js.encode()).hexdigest()[:6]+'";')
 data=json.load(open(base+'src/data.json',encoding='utf-8'))
 dj=json.dumps(data,ensure_ascii=False,separators=(',',':')).replace('</','<\\/')
 body=t.replace('/*CSS*/',css).replace('/*APP*/',js).replace('/*DATA*/',dj)
