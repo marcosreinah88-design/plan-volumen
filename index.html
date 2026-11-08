@@ -806,6 +806,10 @@ button.pill{appearance:none;background:transparent;cursor:pointer;font-family:va
 .avcat[aria-pressed="true"] .sw{background:var(--ok)}.avcat[aria-pressed="true"] .sw i{transform:translateX(16px)}
 #setbtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
+details.pgmore summary{cursor:pointer;font-size:.85rem;color:var(--muted)}details.pgmore[open] summary{margin-bottom:6px}
+#pgrec [data-recall]{justify-self:start}
+#v-progreso .card[hidden]{display:none!important}
+
 </style>
 
 <header class="top">
@@ -859,6 +863,7 @@ button.pill{appearance:none;background:transparent;cursor:pointer;font-family:va
   <!-- PROGRESO -->
   <section class="view" id="v-progreso" aria-label="Progreso" hidden>
     <div class="sec-h"><h2>Progreso</h2><span class="r eyebrow" id="pgsub"></span></div>
+    <div class="seg" id="pgseg" role="group" aria-label="Sección de progreso"><button type="button" data-pg="res">Resumen</button><button type="button" data-pg="ej">Ejercicios</button><button type="button" data-pg="cu">Cuerpo</button></div>
     <div class="card" id="pgw" style="display:grid;gap:12px"></div>
     <div class="card" id="pgweek" style="display:grid;gap:12px"></div>
     <div class="card" id="pgdias" style="display:grid;gap:12px"></div>
@@ -1658,7 +1663,7 @@ function renderWq(){var el=$("wq");if(!el)return;var d=selDay,rev=sameDay(TODAY,
 }
 $("wq").addEventListener("submit",function(e){e.preventDefault();var v=parseFloat(($("wqi").value||"").replace(",","."));if(!bwOk(v)){toast("Escribe tu peso en "+bwName()+", por ejemplo "+bwEx());return;}
   addWeight(iso(TODAY),fromU(v));renderWq();toast("Peso guardado: "+kgs(v)+" "+bwU());});
-$("wq").addEventListener("click",function(e){if(!e.target.closest("[data-wqgo]"))return;show("progreso");var c=$("pgw");if(c)c.scrollIntoView({block:"start"});});
+$("wq").addEventListener("click",function(e){if(!e.target.closest("[data-wqgo]"))return;setPgSeg("res");show("progreso");var c=$("pgw");if(c)c.scrollIntoView({block:"start"});});
 function renderHabits(){
   var d=selDay,dd=dayDoc(d),w=dd.w||0,k=KEYS[d.getDay()],fut=ddiff(d,TODAY)>0,isT=sameDay(d,TODAY);
   var ml=waterMl(dd),pc=Math.min(100,ml/WGOAL*100),dis=fut?' disabled':'';
@@ -2020,18 +2025,23 @@ $("cmbody").addEventListener("click",function(e){if(e.target.id!=="shreset")retu
 function lastWeight(){var W=getDoc("weights",{e:[]});return W.e.length?W.e[W.e.length-1][1]:null;}
 function addWeight(d,kg){var W=getDoc("weights",{e:[]});W.e=W.e.filter(function(r){return r[0]!==d;});W.e.push([d,Math.round(kg*100)/100]);W.e.sort(function(a,b){return a[0]<b[0]?-1:1;});sput("weights",W);}
 function avg(a){return a.length?a.reduce(function(s,x){return s+x;},0)/a.length:null;}
-function renderProgreso(){
+var recAll=false,pgSeg=(function(){try{return localStorage.getItem("pvm:pgseg")||"res";}catch(e){return "res";}})();
+var PGS={res:["pgw","pgweek","pgdias"],ej:["pgex","pgrec"],cu:["pgtan"]};
+function setPgSeg(v){pgSeg=v;try{localStorage.setItem("pvm:pgseg",v);}catch(e){}}
+function pgSegUI(){Object.keys(PGS).forEach(function(k){PGS[k].forEach(function(id){$(id).hidden=k!==pgSeg;});});$("pgseg").querySelectorAll("[data-pg]").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.pg===pgSeg);});}
+$("pgseg").addEventListener("click",function(e){var b=e.target.closest("[data-pg]");if(!b)return;setPgSeg(b.dataset.pg);pgSegUI();window.scrollTo(0,0);});
+function renderProgreso(){pgSegUI();
   var W=getDoc("weights",{e:[]}),E=W.e.map(function(r){return {d:fromIso(r[0]),kg:r[1],s:r[0]};});
   var last=E.length?E[E.length-1]:null;
   var a7=avg(E.filter(function(x){var g=ddiff(TODAY,x.d);return g>=0&&g<7;}).map(function(x){return x.kg;}));
   var p7=avg(E.filter(function(x){var g=ddiff(TODAY,x.d);return g>=7&&g<14;}).map(function(x){return x.kg;}));
   var wk=(a7!=null&&p7!=null)?a7-p7:null;
   var verdict=wk==null?"Necesitas 2 semanas de registros para ver el ritmo.":wk<0.1?"Vas por debajo: si sigue así 2 semanas, suma 1 cereal y 1 grasa en la cena.":wk>0.4?"Vas rápido: si sigue así, quita 1 cereal de la comida y 1 de la cena.":"Vas en el ritmo ideal.";
-  var h='<div class="sec-h"><h3 style="font-size:1.05rem">Peso</h3><span class="r eyebrow">meta '+(bwU()==="lb"?'+0.3 a +0.55 lb':'+0.15 a +0.25 kg')+'/sem</span></div><div class="seg unit" role="group" aria-label="Unidad del peso corporal"><button type="button" data-u="kg" aria-pressed="'+(bwU()==="kg")+'">Kilos</button><button type="button" data-u="lb" aria-pressed="'+(bwU()==="lb")+'">Libras</button></div>';
+  var h='<div class="sec-h"><h3 style="font-size:1.05rem">Peso</h3><span class="r eyebrow">meta '+(bwU()==="lb"?'+0.3 a +0.55 lb':'+0.15 a +0.25 kg')+'/sem</span></div>';
   h+='<form class="wform" id="wf"><label><input type="number" inputmode="decimal" step="0.1" '+bwMinMax()+' id="wi" placeholder="'+bw(last?last.kg:BASEKG)+'" aria-label="Peso en '+bwName()+'"><span>'+bwU()+'</span></label><button class="btn pri" type="submit">Guardar</button></form>';
   h+='<div class="kpis"><div class="stat"><b>'+(last?bw(last.kg):'—')+'</b><span>'+(last?'último · '+last.d.getDate()+' '+MES3[last.d.getMonth()]:'sin registros')+'</span></div><div class="stat"><b>'+(a7!=null?bw(a7):'—')+'</b><span>promedio 7 días</span></div><div class="stat'+(wk!=null&&wk>=0.1&&wk<=0.4?' ok':'')+'"><b>'+(wk!=null?(wk>=0?'+':'')+fmt1.format(Math.round(toU(wk)*10)/10):'—')+'</b><span>'+bwU()+' vs semana pasada</span></div></div>';
-  h+=chartSVG(E)+'<p class="small muted">'+verdict+' Línea base Tanita (4 jul): '+(bwU()==="lb"?'151.5 lb (68.7 kg). Meta a 6 meses: 159–163 lb.':'68.7 kg. Meta a 6 meses: 72–74 kg.')+'</p>';
-  if(ddiff(TODAY,REV)<0)h+='<p class="note info"><b>Primera revisión: domingo 22 nov.</b> Pésate lunes, miércoles y viernes en ayunas, después de ir al baño. Llevas '+wqCount()+' de 6 desde el lunes 9. Ese día la app compara tus dos promedios semanales con la meta.</p>';
+  h+=chartSVG(E)+'<p class="small muted">'+verdict+'</p>';
+  if(ddiff(TODAY,REV)<0)h+='<p class="note info"><b>Revisión: domingo 22 nov</b> · llevas '+wqCount()+' de 6 pesadas (lun, mié y vie en ayunas).</p>';
   else if(sameDay(TODAY,REV))h+='<p class="note"><b>Hoy toca la revisión.</b> '+verdict+'</p>';
   if(E.length)h+='<details><summary class="small" style="cursor:pointer;color:var(--muted)">Ver registros ('+E.length+')</summary><ul class="rec">'+E.slice().reverse().slice(0,30).map(function(x){return '<li><span>'+x.d.getDate()+' '+MES3[x.d.getMonth()]+' '+x.d.getFullYear()+'</span><span>'+bw(x.kg)+' '+bwU()+' <button type="button" class="btn ghost sm" data-delw="'+x.s+'" aria-label="Borrar registro del '+x.s+'" style="padding:2px 8px;margin-left:6px">×</button></span></li>';}).join("")+'</ul></details>';
   $("pgw").innerHTML=h;
@@ -2045,7 +2055,7 @@ function renderProgreso(){
   var B=getDoc("best",{}),ids=Object.keys(B).filter(function(k){return k!=="_t"&&B[k]&&B[k].d;});
   var order={};GK.forEach(function(k,ki){GD[k].ex.forEach(function(e,ei){var id=exId(e);if(!(id in order))order[id]=ki*20+ei;});});
   ids.sort(function(a,b){return (order[a]==null?999:order[a])-(order[b]==null?999:order[b]);});
-  $("pgrec").innerHTML='<div class="sec-h"><h3 style="font-size:1.05rem">Mejores series</h3><span class="r eyebrow">1RM estimado</span></div>'+(ids.length?'<ul class="rec">'+ids.map(function(id){var b=B[id],dd=fromIso(b.d);return '<li><button type="button" class="recb" data-exs="'+id+'"><span>'+b.n+'<small>'+dd.getDate()+' '+MES3[dd.getMonth()]+'</small></span><span>'+kgs(b.kg)+' lb × '+b.r+' · <b>'+kgs(b.e)+'</b></span></button></li>';}).join("")+'</ul>':'<p class="empty">Cuando marques series en Entreno, aquí aparece tu mejor serie de cada ejercicio.</p>');
+  $("pgrec").innerHTML='<div class="sec-h"><h3 style="font-size:1.05rem">Mejores series</h3><span class="r eyebrow">1RM estimado</span></div>'+(ids.length?'<ul class="rec">'+ids.slice(0,recAll?999:6).map(function(id){var b=B[id],dd=fromIso(b.d);return '<li><button type="button" class="recb" data-exs="'+id+'"><span>'+b.n+'<small>'+dd.getDate()+' '+MES3[dd.getMonth()]+'</small></span><span>'+kgs(b.kg)+' lb × '+b.r+' · <b>'+kgs(b.e)+'</b></span></button></li>';}).join("")+'</ul>'+(ids.length>6?'<button type="button" class="btn ghost sm" data-recall>'+(recAll?'Ver menos':'Ver las '+ids.length)+'</button>':''):'<p class="empty">Cuando marques series en Entreno, aquí aparece tu mejor serie de cada ejercicio.</p>');
   renderDias();renderExStats();
   renderTanita();
   var bi=blockInfo(TODAY);$("pgsub").textContent=bi.pre?"":"Bloque "+bi.block+" · semana "+(bi.wk+1);
@@ -2152,7 +2162,7 @@ function exHistory(id,days){
 function allEx(G){var out=[],seen={};G=G||GD;applyAlt();GK.forEach(function(k){G[k].ex.forEach(function(e){var b=e._base||e;[e,b,b.alt].forEach(function(x){if(!x)return;var id=exId(x);if(seen[id])return;seen[id]=1;out.push({id:id,n:x.n,k:k});});});});return out;}
 function metVal(h,m){return m==="top"?h.top[0]:m==="e1"?h.e1:m==="vol"?h.vol:h.reps;}
 function fmtD(dt){var d=fromIso(dt);return d.getDate()+" "+MES3[d.getMonth()];}
-function goStats(id){exStat=id;try{localStorage.setItem("pvm:exstat",id);}catch(e){}show("progreso");var c=$("pgex");if(c)c.scrollIntoView({block:"start"});}
+function goStats(id){exStat=id;try{localStorage.setItem("pvm:exstat",id);}catch(e){}setPgSeg("ej");show("progreso");var c=$("pgex");if(c)c.scrollIntoView({block:"start"});}
 /* ===== días cumplidos por semana, mes y año ===== */
 var diasSeg="sem";try{diasSeg=localStorage.getItem("pvm:diasseg")||"sem";}catch(e){}
 var MESL=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -2222,7 +2232,7 @@ function renderDias(){
     (function(){var S2=dstreaks(),mc=dcount(new Date(TODAY.getFullYear(),TODAY.getMonth(),1),TODAY);return '<div class="dhero"><div class="fire"><b>'+S2.cur+'</b><span>'+(S2.cur===1?'día':'días')+' seguidos<br>en verde</span></div><div><b>'+S2.best+'</b><span>mejor racha</span></div><div><b>'+mc.b+'</b><span>verdes en '+MESL[TODAY.getMonth()].toLowerCase()+'</span></div></div>';})()+
     '<div class="dleg"><span><i class="kb"></i>Las dos</span><span><i class="kg"></i>Solo gym</span><span><i class="kf"></i>Solo dieta</span><span><i class="kn"></i>Ninguno</span></div>'+
     '<div class="dwrap">'+h+'</div>'+
-    '<p class="small muted">Un día queda en verde cuando cumples gym y dieta (el domingo, solo dieta). El gym cuenta si marcaste al menos la mitad de las series y la dieta si marcaste 4 de las 5 comidas. Hoy se pinta en cuanto lo cumplas.</p>';
+    '<details class="pgmore"><summary>¿Cómo se cuenta?</summary><p class="small muted">Un día queda en verde cuando cumples gym y dieta (el domingo, solo dieta). El gym cuenta si marcaste al menos la mitad de las series y la dieta si marcaste 4 de las 5 comidas. Hoy se pinta en cuanto lo cumplas.</p></details>';
 }
 function renderExStats(){
   var box=$("pgex");if(!box)return;
@@ -2299,7 +2309,7 @@ $("pgex").addEventListener("change",function(e){if(e.target.id==="exsel"){exStat
 $("pgex").addEventListener("click",function(e){var b=e.target.closest("[data-met]");if(b){exMet=b.dataset.met;try{localStorage.setItem("pvm:exmet",exMet);}catch(er){}renderExStats();return;}if(e.target.closest("#exchart svg"))exTip(e);});
 $("pgex").addEventListener("pointermove",function(e){if(e.pointerType==="mouse"&&e.target.closest("#exchart svg"))exTip(e);});
 $("pgex").addEventListener("pointerleave",function(){var t=$("extip");if(t)t.hidden=true;var cr=$("excross");if(cr)cr.style.display="none";});
-$("pgrec").addEventListener("click",function(e){var b=e.target.closest("[data-exs]");if(b){exStat=b.dataset.exs;try{localStorage.setItem("pvm:exstat",exStat);}catch(er){}renderExStats();$("pgex").scrollIntoView({block:"start",behavior:"smooth"});}});
+$("pgrec").addEventListener("click",function(e){if(e.target.closest("[data-recall]")){recAll=!recAll;renderProgreso();return;}var b=e.target.closest("[data-exs]");if(b){exStat=b.dataset.exs;try{localStorage.setItem("pvm:exstat",exStat);}catch(er){}renderExStats();$("pgex").scrollIntoView({block:"start",behavior:"smooth"});}});
 function chartSVG(E){
   var Wd=Math.max(300,Math.min(720,Math.round(($("pgw").clientWidth||360)-34))),Hd=Math.round(Math.min(240,Math.max(190,Wd*0.55))),L=30,R=12,Tp=14,Bt=24;
   E=E.map(function(x){return {d:x.d,kg:toU(x.kg),s:x.s};});var BU=toU(BASEKG),UN=bwU();
@@ -2519,7 +2529,7 @@ function renderGuia(){
 
 /* ================= navegación ================= */
 /* ================= AJUSTES ================= */
-var APPV="2026.11.08-f186d1";
+var APPV="2026.11.08-bce3c9";
 var AVCAT=[["meal","Comidas","A la hora de cada comida"],["cre","Creatina","Al terminar el entreno (domingo: con el desayuno)"],["gym","Gym","30 minutos antes de entrenar"],["med","Medicamento","15 minutos antes del desayuno"],["peso","Pésate","Lunes, miércoles y viernes, 25 min antes del desayuno"],["cocina","Batch y prep","Domingo 12:00 y miércoles 21:30"]];
 function avCatOn(c){var C=sget("cfg")||{};return !(C.avo&&C.avo[c]===false);}
 function ajRow(h,t,body){return '<div class="card ajc" style="display:grid;gap:10px"><div class="sec-h"><h3 style="font-size:1.05rem">'+h+'</h3>'+(t?'<span class="r eyebrow">'+t+'</span>':'')+'</div>'+body+'</div>';}
