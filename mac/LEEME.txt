@@ -10,7 +10,7 @@ Instalar o reemplazar la versión anterior:
 2. Cierra la app si está abierta (Cmd+Q).
 3. Abre Terminal, pega esta línea completa y da Enter:
 
-APP="$(find ~/Downloads ~/Desktop -maxdepth 4 -path '*Plan-de-Volumen-Mac/Plan de Volumen.app' -print -quit)"; echo "Encontrada: $APP"; [ -n "$APP" ] && xattr -cr "$APP" && codesign --force --deep -s - "$APP" && rm -rf "/Applications/Plan de Volumen.app" && mv "$APP" /Applications/ && open "/Applications/Plan de Volumen.app"
+APP="$(ls -td ~/Downloads/Plan-de-Volumen-Mac*/'Plan de Volumen.app' 2>/dev/null | head -1)"; if [ -n "$APP" ]; then rm -rf "/Applications/Plan de Volumen.app"; mv "$APP" /Applications/; fi; APP="/Applications/Plan de Volumen.app"; xattr -cr "$APP" && codesign --force --deep -s - "$APP" && open "$APP"
 
    (La app no está firmada con una cuenta de Apple Developer; esa línea la firma en tu Mac para que macOS la deje abrir.
     Solo borra la app vieja de Aplicaciones, no tus datos.)
