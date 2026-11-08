@@ -57,6 +57,9 @@ def icon(n):
     d.pieslice([cx-r,cy-r,cx+r,cy+r],-90,90,fill='#6B93FF');d.pieslice([cx-r,cy-r,cx+r,cy+r],90,270,fill='#F5A524')
     ri=int(r*0.55);d.ellipse([cx-ri,cy-ri,cx+ri,cy+ri],fill='#0E1113')
     im.resize((n,n),Image.LANCZOS).save(out+'icons/icon-%d.png'%n)
-for n in (180,192,512):icon(n)
+LOGO=base+'src/logo.png'
+for n in (180,192,512):
+    if os.path.exists(LOGO):Image.open(LOGO).convert('RGB').resize((n,n),Image.LANCZOS).save(out+'icons/icon-%d.png'%n)
+    else:icon(n)
 open(out+'.nojekyll','w').write('')
 print('pwa',ver,os.path.getsize(out+'index.html')//1024,'KB')
