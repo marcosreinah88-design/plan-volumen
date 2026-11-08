@@ -40,7 +40,19 @@ if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catc
 </body>
 </html>
 '''
-open(out+'index.html','w',encoding='utf-8').write(head+body+tail)
+# Seguridad: política de contenido (CSP). Solo corren los scripts de esta build (por su huella sha256);
+# cualquier código metido en la página no se ejecuta, y solo se puede hablar con GitHub.
+import re,base64
+html=head+body+tail
+hashes=[]
+for m in re.finditer(r'<script(?![^>]*type="application/json")[^>]*>(.*?)</script>',html,re.S):
+    hashes.append("'sha256-"+base64.b64encode(hashlib.sha256(m.group(1).encode('utf-8')).digest()).decode()+"'")
+csp=("default-src 'none'; script-src "+" ".join(hashes)+"; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+     "font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://gist.githubusercontent.com; "
+     "manifest-src 'self'; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'")
+html=html.replace('<meta charset="utf-8">','<meta charset="utf-8">\n<meta http-equiv="Content-Security-Policy" content="'+csp+'">\n<meta name="referrer" content="no-referrer">',1)
+assert html.count('Content-Security-Policy')==1 and len(hashes)==2,len(hashes)
+open(out+'index.html','w',encoding='utf-8').write(html)
 open(out+'manifest.webmanifest','w',encoding='utf-8').write(json.dumps({
  "name":"Plan de Volumen","short_name":"Volumen","start_url":"./","scope":"./","display":"standalone",
  "background_color":"#0E1113","theme_color":"#0E1113","lang":"es",

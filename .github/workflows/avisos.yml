@@ -1,27 +1,38 @@
 name: Avisos al celular
+# Cada 10 min lee tus avisos (del gist secreto) y te manda los que tocan.
+# Seguridad: acciones fijadas por su huella (SHA), permisos mínimos, dependencias con huella (package-lock + npm ci)
+# y registros sin datos personales (el repo es público, así que los registros de Actions también).
 on:
   schedule:
     - cron: '*/10 * * * *'
   workflow_dispatch:
+permissions:
+  contents: read
 concurrency:
   group: avisos
   cancel-in-progress: false
 jobs:
   enviar:
+    if: github.repository == 'marcosreinah88-design/plan-volumen'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: 20
+          persist-credentials: false
+          sparse-checkout: avisos
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
       - name: Recuperar estado
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: estado
           key: avisos-estado-${{ github.run_id }}
           restore-keys: avisos-estado-
-      - run: npm install --no-save --no-audit --no-fund web-push@3.6.7
+      - name: Instalar (con huellas verificadas, sin scripts)
+        working-directory: avisos
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Mandar avisos
         run: node avisos/enviar.mjs
         env:
@@ -29,7 +40,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
       - name: Guardar estado
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: estado
           key: avisos-estado-${{ github.run_id }}

@@ -1,16 +1,17 @@
-Plan de Volumen para Mac
-========================
+Plan de Volumen para Mac (versión 2, con más seguridad)
+=======================================================
 
 Esta app abre tu plan desde GitHub (https://marcosreinah88-design.github.io/plan-volumen/).
 Cada vez que actualicemos el repositorio, la app muestra la versión nueva al abrirla con internet.
+Tus registros no se pierden al reinstalarla: viven en tu Mac, fuera de la app.
 
-Instalar (solo la primera vez):
-1. Descomprime el zip (doble clic). Queda la carpeta "Plan-de-Volumen-Mac" en Descargas.
-2. Abre la app Terminal y pega esta línea completa, luego Enter:
+Instalar o reemplazar la versión anterior:
+1. Descomprime el zip (doble clic).
+2. Cierra la app si está abierta (Cmd+Q).
+3. Abre Terminal, pega esta línea completa y da Enter:
 
-cd ~/Downloads/Plan-de-Volumen-Mac && xattr -cr "Plan de Volumen.app" && codesign --force --deep -s - "Plan de Volumen.app" && mv "Plan de Volumen.app" /Applications/ && open "/Applications/Plan de Volumen.app"
+APP="$(find ~/Downloads ~/Desktop -maxdepth 4 -path '*Plan-de-Volumen-Mac/Plan de Volumen.app' -print -quit)"; echo "Encontrada: $APP"; [ -n "$APP" ] && xattr -cr "$APP" && codesign --force --deep -s - "$APP" && rm -rf "/Applications/Plan de Volumen.app" && mv "$APP" /Applications/ && open "/Applications/Plan de Volumen.app"
 
-   (La app no está firmada con una cuenta de Apple Developer; esa línea la firma en tu Mac para que macOS la deje abrir.)
-3. Listo: queda en Aplicaciones. Arrástrala al Dock si quieres.
-
-Tus registros en la Mac se guardan en la Mac. Para pasar los del iPhone: en el iPhone, Progreso > Guardar respaldo; en la Mac, Progreso > Cargar respaldo.
+   (La app no está firmada con una cuenta de Apple Developer; esa línea la firma en tu Mac para que macOS la deje abrir.
+    Solo borra la app vieja de Aplicaciones, no tus datos.)
+4. Si macOS pregunta si "Plan de Volumen" puede usar el Llavero, toca "Permitir siempre": ahí se guarda cifrada tu clave de GitHub.

@@ -2,6 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-EEPVPNm2YzYdx24mr6xz+yV0cqSjfjbJDmxBL9sM0rU=' 'sha256-zTy0ZjxcjjGgxbevhZcx78LFMUbIS6A47qPJEONL8a0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://gist.githubusercontent.com; manifest-src 'self'; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
@@ -1183,7 +1185,7 @@ function blockInfo(d){var w=Math.floor(ddiff(d,START)/7);if(w<0)return {pre:true
 function slug(s){return s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,48);}
 function nsets(sr){return parseInt(sr,10)||3;}
 function restSec(r){var m=String(r).match(/(\d+)(?:\s*[–-]\s*(\d+))?\s*(min|s)/);if(!m)return 90;var a=+m[1],b=m[2]?+m[2]:a,v=(a+b)/2;return m[3]==="min"?Math.round(v*60):Math.round(v);}
-function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function esc(s){return String(s==null?"":s).replace(/[&<>"'`]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;","`":"&#96;"}[c];});}
 function dur(m){m=Math.max(0,Math.round(m));if(m<60)return m+" min";var h=Math.floor(m/60),r=m%60;return h+" h"+(r?" "+r:"");}
 function e1rm(kg,r){return kg*(1+r/30);}
 function dcol(k){return "var(--d-"+k+")";}
@@ -1223,8 +1225,39 @@ function toast(msg){var t=$("toast");t.textContent=msg;t.classList.add("on");cle
 /* ================= guardado: cuenta (db privada) con respaldo en el equipo ================= */
 /* PWA: versión instalable (GitHub Pages). Guarda todo en el equipo y tiene respaldo; la build de GitHub cambia esto a true */
 var PWA=true;
+/* si alguien intenta meter la app instalable dentro de otra página (para engañarte con clics), se sale */
+if(PWA){try{if(window.top!==window.self){window.top.location=window.self.location.href;}}catch(e){document.documentElement.style.display="none";}}
 var S={col:null,cache:{},timer:{},busy:{},again:{},dirty:{},mode:"local"};
-function lsGet(k){try{var v=localStorage.getItem("pvm:"+k);return v?JSON.parse(v):null;}catch(e){return null;}}
+/* ===== seguridad: todo lo que se lee del equipo, de un respaldo o de GitHub pasa por aquí antes de usarse.
+   Quita caracteres con los que se podría meter código (< > " ' ` \), llaves peligrosas (__proto__), tamaños absurdos y tipos raros. ===== */
+var BADK={"__proto__":1,"constructor":1,"prototype":1};
+var BADC=/[<>"'`\\\u0000-\u001f\u007f\u2028\u2029]/g;
+function sanV(v,dep){
+  if(v===null||typeof v==="boolean")return v;
+  if(typeof v==="number")return isFinite(v)?v:null;
+  if(typeof v==="string")return v.slice(0,300).replace(BADC,"");
+  if(dep>6||typeof v!=="object")return undefined;
+  if(Array.isArray(v)){var a=[];for(var i=0;i<v.length&&i<500;i++){var x=sanV(v[i],dep+1);a.push(x===undefined?null:x);}return a;}
+  var o={},ks=Object.keys(v),n=0;
+  for(var j=0;j<ks.length&&n<600;j++){var k=ks[j];BADC.lastIndex=0;if(BADK[k]||k.length>80||/[<>"'`\\\u0000-\u001f\u007f\u2028\u2029]/.test(k))continue;var y=sanV(v[k],dep+1);if(y!==undefined){o[k]=y;n++;}}
+  return o;
+}
+function sanDoc(k,v){
+  if(v==null||typeof v!=="object"||Array.isArray(v))return null;
+  var o=sanV(v,0),obj=function(x){return x!=null&&typeof x==="object"&&!Array.isArray(x);};
+  if(String(k).indexOf("d-")===0){
+    var nm=(typeof MENUS!=="undefined"&&MENUS)?MENUS.length:4;
+    if(o.mn!=null&&!(typeof o.mn==="number"&&o.mn===Math.floor(o.mn)&&o.mn>=0&&o.mn<nm))delete o.mn;
+    if(o.rk!=null&&!(typeof o.rk==="string"&&(o.rk==="sup"||(GD&&Object.prototype.hasOwnProperty.call(GD,o.rk)))))delete o.rk;
+    ["m","s","sw"].forEach(function(f){if(o[f]!=null&&!obj(o[f]))delete o[f];});
+    if(o.s)Object.keys(o.s).forEach(function(id){if(!Array.isArray(o.s[id]))delete o.s[id];});
+  }
+  if(k==="weights")o.e=Array.isArray(o.e)?o.e.filter(function(r){return Array.isArray(r)&&typeof r[0]==="string"&&/^\d{4}-\d\d-\d\d$/.test(r[0])&&typeof r[1]==="number"&&r[1]>20&&r[1]<400;}):[];
+  if(k==="cfg"&&o.bw!=null&&o.bw!=="kg"&&o.bw!=="lb")delete o.bw;
+  if(k==="tanita"&&o.e!=null&&!obj(o.e))delete o.e;
+  return o;
+}
+function lsGet(k){try{var v=localStorage.getItem("pvm:"+k);return v?sanDoc(k,JSON.parse(v)):null;}catch(e){return null;}}
 function lsSet(k,v){try{localStorage.setItem("pvm:"+k,JSON.stringify(v));}catch(e){}}
 function sget(k){if(!(k in S.cache))S.cache[k]=lsGet(k);return S.cache[k];}
 function sput(k,v){v._t=Date.now();S.cache[k]=v;lsSet(k,v);S.dirty[k]=1;if(PWA)ghSoon();if(S.col){clearTimeout(S.timer[k]);S.timer[k]=setTimeout(function(){flush(k);},700);}}
@@ -1285,6 +1318,7 @@ function mergeMap(a,b,pick){
   out._t=Math.max(a._t||0,b._t||0);return out;
 }
 function mergeDocs(k,a,b){
+  a=a?sanDoc(k,a):null;b=b?sanDoc(k,b):null;
   if(!a)return b?cp(b):null;if(!b)return cp(a);
   if(k.indexOf("d-")===0)return mergeDay(a,b);
   if(k==="last")return mergeMap(a,b,function(n,o){if(!n)return o;if(!o)return n;return (o.d||"")>(n.d||"")?o:n;});
@@ -2055,7 +2089,7 @@ function renderProgreso(){pgSegUI();
   var B=getDoc("best",{}),ids=Object.keys(B).filter(function(k){return k!=="_t"&&B[k]&&B[k].d;});
   var order={};GK.forEach(function(k,ki){GD[k].ex.forEach(function(e,ei){var id=exId(e);if(!(id in order))order[id]=ki*20+ei;});});
   ids.sort(function(a,b){return (order[a]==null?999:order[a])-(order[b]==null?999:order[b]);});
-  $("pgrec").innerHTML='<div class="sec-h"><h3 style="font-size:1.05rem">Mejores series</h3><span class="r eyebrow">1RM estimado</span></div>'+(ids.length?'<ul class="rec">'+ids.slice(0,recAll?999:6).map(function(id){var b=B[id],dd=fromIso(b.d);return '<li><button type="button" class="recb" data-exs="'+id+'"><span>'+b.n+'<small>'+dd.getDate()+' '+MES3[dd.getMonth()]+'</small></span><span>'+kgs(b.kg)+' lb × '+b.r+' · <b>'+kgs(b.e)+'</b></span></button></li>';}).join("")+'</ul>'+(ids.length>6?'<button type="button" class="btn ghost sm" data-recall>'+(recAll?'Ver menos':'Ver las '+ids.length)+'</button>':''):'<p class="empty">Cuando marques series en Entreno, aquí aparece tu mejor serie de cada ejercicio.</p>');
+  $("pgrec").innerHTML='<div class="sec-h"><h3 style="font-size:1.05rem">Mejores series</h3><span class="r eyebrow">1RM estimado</span></div>'+(ids.length?'<ul class="rec">'+ids.slice(0,recAll?999:6).map(function(id){var b=B[id],dd=fromIso(b.d);return '<li><button type="button" class="recb" data-exs="'+esc(id)+'"><span>'+esc(b.n)+'<small>'+dd.getDate()+' '+MES3[dd.getMonth()]+'</small></span><span>'+kgs(b.kg)+' lb × '+b.r+' · <b>'+kgs(b.e)+'</b></span></button></li>';}).join("")+'</ul>'+(ids.length>6?'<button type="button" class="btn ghost sm" data-recall>'+(recAll?'Ver menos':'Ver las '+ids.length)+'</button>':''):'<p class="empty">Cuando marques series en Entreno, aquí aparece tu mejor serie de cada ejercicio.</p>');
   renderDias();renderExStats();
   renderTanita();
   var bi=blockInfo(TODAY);$("pgsub").textContent=bi.pre?"":"Bloque "+bi.block+" · semana "+(bi.wk+1);
@@ -2361,33 +2395,85 @@ function bkExport(){var D={app:"plan-volumen",v:1,at:new Date().toISOString(),do
   var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"application/json"}));a.download=nm;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},2000);done();}
 function bkImport(file){var r=new FileReader();r.onload=function(){var D;try{D=JSON.parse(r.result);}catch(e){toast("Ese archivo no es un respaldo del plan");return;}
   if(!D||D.app!=="plan-volumen"||!D.docs){toast("Ese archivo no es un respaldo del plan");return;}
-  var n=0;Object.keys(D.docs).forEach(function(k){if(!/^(d-\d{4}-\d\d-\d\d|weights|best|last|shop|cfg|tanita)$/.test(k))return;var rem=D.docs[k],loc=sget(k),m=loc?mergeDocs(k,loc,rem):cp(rem);S.cache[k]=m;lsSet(k,m);n++;});
+  var n=0;Object.keys(D.docs).forEach(function(k){if(!/^(d-\d{4}-\d\d-\d\d|weights|best|last|shop|cfg|tanita)$/.test(k))return;var rem=D.docs[k],loc=sget(k),m=mergeDocs(k,loc,rem);if(!m)return;S.cache[k]=m;lsSet(k,m);n++;});
   toast("Respaldo cargado: "+n+" registros");renderAll();};r.readAsText(file);}
 document.addEventListener("click",function(e){var b=e.target.closest("[data-bk]");if(b&&b.dataset.bk==="exp")bkExport();});
 document.addEventListener("change",function(e){if(e.target.id==="bkin"&&e.target.files[0]){bkImport(e.target.files[0]);e.target.value="";}});
 
 /* ================= sincronizar entre equipos (app instalable) =================
    Tus registros se guardan en un gist secreto de tu GitHub. Cada equipo baja la copia, la junta con la suya (mergeDocs) y sube el resultado. */
-var GH={busy:0,again:0,timer:null,err:"",fname:"plan-volumen-sync.json",desc:"Plan de Volumen · sincronización (no borrar)"};
-function ghGet(k){try{return localStorage.getItem("pvmgh:"+k)||"";}catch(e){return "";}}
-function ghSet(k,v){try{if(v)localStorage.setItem("pvmgh:"+k,v);else localStorage.removeItem("pvmgh:"+k);}catch(e){}}
-function ghOn(){return PWA&&!!ghGet("tok");}
+var GH={busy:0,again:0,timer:null,err:"",dec:0,tok:"",fname:"plan-volumen-sync.json",fenc:"plan-volumen-datos.cifrado.json",desc:"Plan de Volumen · sincronización (no borrar)"};
+/* la clave de GitHub vive en memoria; en la Mac se guarda en el Llavero (pvSecure), en el celular en el almacenamiento de la app */
+function ghGet(k){if(k==="tok")return GH.tok;try{return localStorage.getItem("pvmgh:"+k)||"";}catch(e){return "";}}
+function ghSet(k,v){
+  if(k==="tok"){GH.tok=v||"";GH.keyP=null;GH.keyT="";
+    /* primero en el equipo; si hay Llavero (app de Mac) se pasa ahí y se borra de aquí */
+    try{if(v)localStorage.setItem("pvmgh:tok",v);else localStorage.removeItem("pvmgh:tok");}catch(e){}
+    if(v&&window.pvSecure&&typeof window.pvSecure.set==="function")window.pvSecure.set(v).then(function(ok){if(ok&&GH.tok===v){try{localStorage.removeItem("pvmgh:tok");}catch(e){}}},function(){});
+    else if(!v&&window.pvSecure&&typeof window.pvSecure.set==="function")window.pvSecure.set("").catch(function(){});
+    return;}
+  try{if(v)localStorage.setItem("pvmgh:"+k,v);else localStorage.removeItem("pvmgh:"+k);}catch(e){}}
+function ghBoot(){
+  var ls="";try{ls=localStorage.getItem("pvmgh:tok")||"";}catch(e){}
+  GH.tok=ls;
+  if(!(window.pvSecure&&typeof window.pvSecure.get==="function"))return Promise.resolve();
+  return window.pvSecure.get().then(function(v){
+    if(v){GH.tok=v;try{localStorage.removeItem("pvmgh:tok");}catch(e){}return;}
+    if(ls)return window.pvSecure.set(ls).then(function(ok){if(ok){try{localStorage.removeItem("pvmgh:tok");}catch(e){}}});
+  }).catch(function(){});
+}
+function ghOn(){return PWA&&!!GH.tok;}
 function ghApi(path,method,body){
-  return fetch("https://api.github.com"+path,{method:method||"GET",cache:"no-store",headers:{"Authorization":"Bearer "+ghGet("tok"),"Accept":"application/vnd.github+json","Content-Type":"application/json"},body:body?JSON.stringify(body):undefined})
+  if(!/^\/gists(\/[0-9a-f]{20,40})?(\?per_page=100)?$/.test(path))return Promise.reject(new Error("ruta"));
+  return fetch("https://api.github.com"+path,{method:method||"GET",cache:"no-store",credentials:"omit",referrerPolicy:"no-referrer",headers:{"Authorization":"Bearer "+GH.tok,"Accept":"application/vnd.github+json","Content-Type":"application/json"},body:body?JSON.stringify(body):undefined})
     .then(function(r){if(!r.ok){var e=new Error("gh "+r.status);e.status=r.status;throw e;}return r.json();});
 }
-function ghPack(docs){return JSON.stringify({app:"plan-volumen",v:1,at:new Date().toISOString(),docs:docs});}
-function ghRead(g){var f=g&&g.files&&g.files[GH.fname];if(!f)return Promise.resolve({});
-  var p=f.truncated?fetch(f.raw_url,{cache:"no-store"}).then(function(r){return r.text();}):Promise.resolve(f.content||"");
-  return p.then(function(t){try{var D=JSON.parse(t);return D&&D.docs||{};}catch(e){return {};}});}
+/* cifrado de tus datos en GitHub: AES-GCM 256 con una llave que sale de tu clave (PBKDF2, 310 000 vueltas).
+   Sin tu clave nadie puede leerlos, y si alguien los altera, la app lo detecta y no los usa. */
+var ENC={salt:"plan-volumen/sync/v1",it:310000};
+function ghKey(){
+  if(GH.keyP&&GH.keyT===GH.tok)return GH.keyP;
+  var te=new TextEncoder(),tok=GH.tok;GH.keyT=tok;
+  GH.keyP=crypto.subtle.importKey("raw",te.encode(tok),"PBKDF2",false,["deriveKey"]).then(function(base){
+    return crypto.subtle.deriveKey({name:"PBKDF2",salt:te.encode(ENC.salt),iterations:ENC.it,hash:"SHA-256"},base,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);});
+  return GH.keyP;
+}
+function ghSeal(docs){
+  var iv=crypto.getRandomValues(new Uint8Array(12)),pt=new TextEncoder().encode(JSON.stringify({app:"plan-volumen",v:1,at:new Date().toISOString(),docs:docs}));
+  return ghKey().then(function(k){return crypto.subtle.encrypt({name:"AES-GCM",iv:iv,additionalData:new TextEncoder().encode("plan-volumen")},k,pt);})
+    .then(function(ct){return JSON.stringify({app:"plan-volumen",enc:"aes-256-gcm",kdf:"pbkdf2-sha256",it:ENC.it,iv:b64u(iv),ct:b64u(ct)});});
+}
+function ghOpen(txt){
+  var E;try{E=JSON.parse(txt);}catch(e){return Promise.reject({dec:1});}
+  if(!E||E.app!=="plan-volumen"||E.enc!=="aes-256-gcm"||typeof E.iv!=="string"||typeof E.ct!=="string")return Promise.reject({dec:1});
+  return ghKey().then(function(k){return crypto.subtle.decrypt({name:"AES-GCM",iv:unb64u(E.iv),additionalData:new TextEncoder().encode("plan-volumen")},k,unb64u(E.ct));})
+    .then(function(pt){var D=JSON.parse(new TextDecoder().decode(pt));return D&&D.app==="plan-volumen"&&D.docs&&typeof D.docs==="object"?D.docs:{};},function(){throw {dec:1};});
+}
+function ghText(f){
+  if(!f)return Promise.resolve(null);
+  if(!f.truncated)return Promise.resolve(f.content||"");
+  var u;try{u=new URL(f.raw_url);}catch(e){return Promise.resolve(null);}
+  if(u.protocol!=="https:"||u.hostname!=="gist.githubusercontent.com")return Promise.resolve(null);
+  return fetch(u.href,{cache:"no-store",credentials:"omit",referrerPolicy:"no-referrer"}).then(function(r){return r.ok?r.text():null;});
+}
+/* lee lo que hay en GitHub: el archivo cifrado y, si todavía existe, el viejo sin cifrar (se borra al guardar) */
+function ghRead(g){
+  var fs=g&&g.files||{};
+  return Promise.all([ghText(fs[GH.fenc]),ghText(fs[GH.fname])]).then(function(r){
+    var old={};if(r[1]){try{var D=JSON.parse(r[1]);if(D&&D.app==="plan-volumen"&&D.docs&&typeof D.docs==="object")old=D.docs;}catch(e){}}
+    if(!r[0])return {docs:old,plain:!!fs[GH.fname],enc:false};
+    return ghOpen(r[0]).then(function(docs){Object.keys(old).forEach(function(k){docs[k]=docs[k]?mergeDocs(k,docs[k],old[k]):old[k];});return {docs:docs,plain:!!fs[GH.fname],enc:true};});
+  });
+}
 function ghFind(){
   var id=ghGet("id");
+  if(id&&!/^[0-9a-f]{20,40}$/.test(id)){ghSet("id","");id="";}
   if(id)return ghApi("/gists/"+id).catch(function(e){if(e.status===404){ghSet("id","");return ghFind();}throw e;});
   return ghApi("/gists?per_page=100").then(function(list){
-    var g=(list||[]).filter(function(x){return x.files&&x.files[GH.fname];})[0];
+    var g=(list||[]).filter(function(x){return x&&x.files&&(x.files[GH.fenc]||x.files[GH.fname])&&/^[0-9a-f]{20,40}$/.test(x.id||"");})[0];
     if(g){ghSet("id",g.id);return ghApi("/gists/"+g.id);}
-    var files={};files[GH.fname]={content:ghPack(allDocs())};
-    return ghApi("/gists","POST",{description:GH.desc,public:false,files:files}).then(function(n){ghSet("id",n.id);return n;});
+    return ghSeal(allDocs()).then(function(c){var files={};files[GH.fenc]={content:c};
+      return ghApi("/gists","POST",{description:GH.desc,public:false,files:files});}).then(function(n){ghSet("id",n.id);return n;});
   });
 }
 function ghSoon(){if(!ghOn())return;clearTimeout(GH.timer);GH.timer=setTimeout(ghSync,2500);}
@@ -2396,7 +2482,8 @@ function ghSync(manual){
   if(GH.busy){GH.again=1;return;}
   GH.busy=1;setSync("busy");
   var G=null;
-  ghFind().then(function(g){G=g;return ghRead(g);}).then(function(rem){
+  var RD=null;
+  ghFind().then(function(g){G=g;return ghRead(g);}).then(function(rd){RD=rd;var rem=rd.docs;
     var loc=allDocs(),keys={},changed=0,push=0,out={};
     Object.keys(S.cache).forEach(function(k){if(S.cache[k])loc[k]=S.cache[k];});
     Object.keys(loc).concat(Object.keys(rem)).forEach(function(k){keys[k]=1;});
@@ -2408,19 +2495,23 @@ function ghSync(manual){
       if(!r||ms!==JSON.stringify(r))push=1;
     });
     var files={},av;
-    if(push)files[GH.fname]={content:ghPack(out)};
     if(G&&G.files&&G.files[AV.pfile]){av=JSON.stringify(avBuild());var ra=G.files[AV.file];if(!ra||ra.content!==av)files[AV.file]={content:av};}
-    if(!Object.keys(files).length)return changed;
-    return ghApi("/gists/"+ghGet("id"),"PATCH",{files:files}).then(function(){return changed;});
+    if(RD.plain)files[GH.fname]=null;
+    var go=(push||!RD.enc||RD.plain)?ghSeal(out).then(function(c){files[GH.fenc]={content:c};}):Promise.resolve();
+    return go.then(function(){
+      if(!Object.keys(files).length)return changed;
+      return ghApi("/gists/"+ghGet("id"),"PATCH",{files:files}).then(function(){return changed;});});
   }).then(function(changed){
-    GH.busy=0;GH.err="";ghSet("last",String(Date.now()));setSync("on");
+    GH.busy=0;GH.err="";GH.dec=0;ghSet("last",String(Date.now()));setSync("on");
     if(changed){var a=document.activeElement;if(!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)))renderAll();}
     else if(view==="ajustes")renderBackup();
     if(manual)toast("Sincronizado");
     if(GH.again){GH.again=0;ghSoon();}
   },function(e){
     GH.busy=0;setSync("local");
-    if(e&&(e.status===401||e.status===403)){GH.err="GitHub no aceptó tu clave. Crea una nueva (con permiso gist) y pégala otra vez.";}
+    GH.dec=0;
+    if(e&&e.dec){GH.dec=1;GH.err="Tus datos en GitHub están cifrados con otra clave (o alguien los alteró), así que no los abrí ni los toqué. Si cambiaste tu clave, pega la anterior; si ya no la tienes, usa el botón de abajo para reemplazarlos con los de este equipo.";}
+    else if(e&&(e.status===401||e.status===403)){GH.err="GitHub no aceptó tu clave. Crea una nueva (con permiso gist) y pégala otra vez.";}
     else GH.err="No hay conexión con GitHub. Lo que anotes se guarda aquí y se sube cuando vuelva el internet.";
     if(manual||e&&e.status)toast(GH.err);
     if(view==="ajustes")renderBackup();
@@ -2498,13 +2589,15 @@ function ghCard(){
     '<form class="ghf" id="ghf"><input id="ghtok" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ghp_…" aria-label="Clave de GitHub"><button class="btn pri" type="submit">Conectar</button></form></div>';
   var L=+ghGet("last")||0;
   return '<div class="ghs gfirst">'+(GH.err?'<p class="note">'+GH.err+'</p>':'<p class="small" style="color:var(--ok)">Conectado'+(L?' · última vez '+pad(new Date(L).getHours())+':'+pad(new Date(L).getMinutes()):'')+'</p>')+
-    '<p class="small muted">Se sincroniza solo cada vez que anotas algo y al abrir la app.</p><div class="gbtns"><button class="btn ghost" type="button" data-gh="now">Sincronizar ahora</button><button class="btn ghost" type="button" data-gh="off">Desconectar</button></div></div>';
+    '<p class="small muted">Se sincroniza solo cada vez que anotas algo y al abrir la app. Tus datos viajan y se guardan en GitHub cifrados con tu clave.</p>'+(GH.dec?'<div class="gbtns"><button class="btn ghost" type="button" data-gh="reset">Reemplazar con los datos de este equipo</button></div>':'')+'<div class="gbtns"><button class="btn ghost" type="button" data-gh="now">Sincronizar ahora</button><button class="btn ghost" type="button" data-gh="off">Desconectar</button></div></div>';
 }
 document.addEventListener("submit",function(e){if(e.target.id!=="ghf")return;e.preventDefault();var v=($("ghtok").value||"").trim();
-  if(!/^(ghp_|github_pat_)[A-Za-z0-9_]{20,}$/.test(v)){toast("Esa no parece una clave de GitHub (empieza con ghp_)");return;}
-  ghSet("tok",v);ghSet("id","");GH.err="";renderBackup();ghSync(true);});
+  if(!/^(ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{50,100})$/.test(v)){toast("Esa no parece una clave de GitHub (empieza con ghp_)");return;}
+  $("ghtok").value="";ghSet("tok",v);ghSet("id","");GH.err="";GH.dec=0;renderBackup();ghSync(true);});
 document.addEventListener("click",function(e){var b=e.target.closest("[data-gh]");if(!b)return;
   if(b.dataset.gh==="now")ghSync(true);
+  else if(b.dataset.gh==="reset"){if(b.dataset.arm!=="1"){b.dataset.arm="1";b.textContent="¿Seguro? Lo de GitHub se reemplaza. Toca otra vez";return;}
+    var id=ghGet("id");if(!id)return;ghSeal(allDocs()).then(function(c){var f={};f[GH.fenc]={content:c};f[GH.fname]=null;return ghApi("/gists/"+id,"PATCH",{files:f});}).then(function(){GH.dec=0;GH.err="";ghSync(true);},function(){toast("No se pudo. Revisa tu internet");});}
   else if(b.dataset.gh==="off"){ghSet("tok","");ghSet("id","");ghSet("last","");GH.err="";setSync("local");renderBackup();toast("Desconectado. Tus registros siguen en este equipo");}});
 document.addEventListener("visibilitychange",function(){if(!document.hidden&&ghOn())ghSync();});
 window.addEventListener("online",function(){if(ghOn())ghSync();});
@@ -2529,7 +2622,7 @@ function renderGuia(){
 
 /* ================= navegación ================= */
 /* ================= AJUSTES ================= */
-var APPV="2026.11.08-bce3c9";
+var APPV="2026.11.08-2fd5be";
 var AVCAT=[["meal","Comidas","A la hora de cada comida"],["cre","Creatina","Al terminar el entreno (domingo: con el desayuno)"],["gym","Gym","30 minutos antes de entrenar"],["med","Medicamento","15 minutos antes del desayuno"],["peso","Pésate","Lunes, miércoles y viernes, 25 min antes del desayuno"],["cocina","Batch y prep","Domingo 12:00 y miércoles 21:30"]];
 function avCatOn(c){var C=sget("cfg")||{};return !(C.avo&&C.avo[c]===false);}
 function ajRow(h,t,body){return '<div class="card ajc" style="display:grid;gap:10px"><div class="sec-h"><h3 style="font-size:1.05rem">'+h+'</h3>'+(t?'<span class="r eyebrow">'+t+'</span>':'')+'</div>'+body+'</div>';}
@@ -2623,7 +2716,7 @@ $("pgdias").addEventListener("click",function(e){var c=e.target.closest(".dc[dat
 if(modeOf(TODAY)==="sup")wsel="sup";if(dayRK(TODAY))wsel=dayRK(TODAY);
 renderAll();show(started?"entreno":"hoy");
 connect();
-if(ghOn())ghSync();
+ghBoot().then(function(){if(ghOn())ghSync();if(view==="ajustes")renderAjustes();});
 })();
 
 </script>
