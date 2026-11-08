@@ -1,0 +1,16 @@
+Plan de Volumen para Mac
+========================
+
+Esta app abre tu plan desde GitHub (https://marcosreinah88-design.github.io/plan-volumen/).
+Cada vez que actualicemos el repositorio, la app muestra la versión nueva al abrirla con internet.
+
+Instalar (solo la primera vez):
+1. Descomprime el zip (doble clic). Queda la carpeta "Plan-de-Volumen-Mac" en Descargas.
+2. Abre la app Terminal y pega esta línea completa, luego Enter:
+
+cd ~/Downloads/Plan-de-Volumen-Mac && xattr -cr "Plan de Volumen.app" && codesign --force --deep -s - "Plan de Volumen.app" && mv "Plan de Volumen.app" /Applications/ && open "/Applications/Plan de Volumen.app"
+
+   (La app no está firmada con una cuenta de Apple Developer; esa línea la firma en tu Mac para que macOS la deje abrir.)
+3. Listo: queda en Aplicaciones. Arrástrala al Dock si quieres.
+
+Tus registros en la Mac se guardan en la Mac. Para pasar los del iPhone: en el iPhone, Progreso > Guardar respaldo; en la Mac, Progreso > Cargar respaldo.
