@@ -1246,7 +1246,8 @@ function ghSync(manual){
   if(!ghOn())return;
   if(GH.busy){GH.again=1;return;}
   GH.busy=1;setSync("busy");
-  ghFind().then(ghRead).then(function(rem){
+  var G=null;
+  ghFind().then(function(g){G=g;return ghRead(g);}).then(function(rem){
     var loc=allDocs(),keys={},changed=0,push=0,out={};
     Object.keys(S.cache).forEach(function(k){if(S.cache[k])loc[k]=S.cache[k];});
     Object.keys(loc).concat(Object.keys(rem)).forEach(function(k){keys[k]=1;});
@@ -1257,8 +1258,10 @@ function ghSync(manual){
       if(!l||ms!==JSON.stringify(l)){S.cache[k]=m;lsSet(k,m);changed=1;}
       if(!r||ms!==JSON.stringify(r))push=1;
     });
-    if(!push)return changed;
-    var files={};files[GH.fname]={content:ghPack(out)};
+    var files={},av;
+    if(push)files[GH.fname]={content:ghPack(out)};
+    if(G&&G.files&&G.files[AV.pfile]){av=JSON.stringify(avBuild());var ra=G.files[AV.file];if(!ra||ra.content!==av)files[AV.file]={content:av};}
+    if(!Object.keys(files).length)return changed;
     return ghApi("/gists/"+ghGet("id"),"PATCH",{files:files}).then(function(){return changed;});
   }).then(function(changed){
     GH.busy=0;GH.err="";ghSet("last",String(Date.now()));setSync("on");
@@ -1274,13 +1277,79 @@ function ghSync(manual){
     if(view==="progreso")renderBackup();
   });
 }
+/* ================= avisos al celular =================
+   La app arma tus avisos de los próximos 7 días y los guarda en el gist (avisos.json).
+   Un proceso de GitHub (Actions, cada 10 min) los lee y te manda la notificación. */
+var AV={file:"avisos.json",pfile:"avisos-push.json",secret:"AVISOS_GIST"};
+function avBuild(){
+  var out=[],now=Date.now(),W=(sget("weights")||{e:[]}).e||[];
+  for(var i=0;i<7;i++){(function(d){
+    var dd=sget(dk(d))||{m:{},s:{}},m=dd.m||{},hr=HRS[DAYS[d.getDay()].h],id=iso(d);
+    var add=function(min,tag,t,b){var x=+d+min*60000;if(x>now)out.push({at:x,tag:id+"-"+tag,t:t,b:b});};
+    dayItems(d).forEach(function(x){
+      if(x.type==="meal"&&!m[x.k]){var tt=itemTitle(d,x);add(x.s,x.k,mealName(d,x.k)+" · "+x.a,tt[0].replace(/^[^:]*:\s*/,"")+" · "+tt[1]);}
+      else if(x.type==="cre"&&!m.cre)add(x.post?x.s:x.s-1,"cre","Creatina · 5 g",x.post?"Al terminar el entreno, en agua o en tu batido":"Con el desayuno");
+      else if(x.type==="gym"&&!x.cl&&!doneSets(d)){var g=GDat(d)[x.k]||GD[x.k];add(x.s-30,"gym","En 30 min: "+g.t,"Entreno a las "+x.a+" · "+g.tm);}
+      else if(x.type==="prep")add(x.s,"prep","Prep para el jueves","20 minutos antes de dormir");
+      else if(x.type==="batch")add(x.s,"batch","Batch del Menú "+(weekMenu(d)+1),"90 minutos de cocina");
+    });
+    var des=mins(hr.des);
+    if(!dd.med)add(des-15,"med","Medicamento de la mañana","Tómatelo antes del desayuno");
+    if(wqDay(d)&&!W.some(function(r){return r[0]===id;}))add(des-25,"peso","Pésate hoy","En ayunas, después de ir al baño. Anótalo en Hoy");
+  })(addD(TODAY,i));}
+  out.sort(function(a,b){return a.at-b.at;});
+  return {v:1,items:out};
+}
+function b64u(buf){var s="",b=new Uint8Array(buf);for(var i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");}
+function unb64u(s){s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";var r=atob(s),o=new Uint8Array(r.length);for(var i=0;i<r.length;i++)o[i]=r.charCodeAt(i);return o;}
+function avCan(){return "serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window;}
+function avStandalone(){return (window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true;}
+function avOn(){return ghGet("av")==="1";}
+function avEnable(){
+  if(!ghOn()){toast("Primero conecta tu GitHub arriba");return;}
+  Notification.requestPermission().then(function(p){
+    if(p!=="granted"){toast("Sin permiso no te puedo mandar avisos. Actívalo en Ajustes → Notificaciones → Volumen");throw 0;}
+    return ghFind();
+  }).then(function(g){
+    var f=g.files&&g.files[AV.pfile],P=null;try{P=f?JSON.parse(f.content):null;}catch(e){}
+    var keys=P&&P.pub&&P.priv?Promise.resolve(P):crypto.subtle.generateKey({name:"ECDSA",namedCurve:"P-256"},true,["sign"]).then(function(kp){
+      return Promise.all([crypto.subtle.exportKey("raw",kp.publicKey),crypto.subtle.exportKey("jwk",kp.privateKey)]).then(function(r){return {pub:b64u(r[0]),priv:r[1].d,subs:[]};});});
+    return keys.then(function(P2){
+      return navigator.serviceWorker.ready.then(function(reg){
+        return reg.pushManager.getSubscription().then(function(old){
+          var go=function(){return reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:unb64u(P2.pub)});};
+          if(old){var ok=old.options&&old.options.applicationServerKey&&b64u(old.options.applicationServerKey)===P2.pub;if(ok)return old;return old.unsubscribe().then(go,go);}
+          return go();
+        });
+      }).then(function(sub){
+        var sj=sub.toJSON();P2.subs=(P2.subs||[]).filter(function(x){return x.endpoint!==sj.endpoint;}).concat([sj]).slice(-4);
+        var files={};files[AV.pfile]={content:JSON.stringify(P2)};files[AV.file]={content:JSON.stringify(avBuild())};
+        return ghApi("/gists/"+ghGet("id"),"PATCH",{files:files});
+      });
+    });
+  }).then(function(){ghSet("av","1");renderBackup();toast("Avisos activados en este celular");},function(e){if(e!==0){toast("No se pudieron activar los avisos. Revisa tu internet e inténtalo otra vez");}renderBackup();});
+}
+function avCard(){
+  var h='<div class="ghs"><h4>Avisos en el celular</h4>';
+  if(!avCan()||!avStandalone())return h+'<p class="small muted">Los avisos funcionan en el iPhone con la app instalada: en Safari toca Compartir → Agregar a pantalla de inicio y ábrela desde el ícono. Ahí aparece el botón para activarlos.</p></div>';
+  if(!avOn())return h+'<p class="small muted">Te aviso tus comidas, la creatina, 30 min antes del gym, el medicamento y los días de pesarte. Si ya lo marcaste, no te llega.</p><div class="gbtns"><button class="btn pri" type="button" data-av="on">Activar avisos</button></div></div>';
+  return h+'<p class="small" style="color:var(--ok)">Activados en este celular'+(Notification.permission!=="granted"?' (pero el permiso está apagado en Ajustes)':'')+'</p>'+
+    '<p class="small muted">Si todavía no te llega ninguno, falta un paso que se hace una sola vez: en GitHub agrega un secreto llamado <b>'+AV.secret+'</b> con este código.</p>'+
+    '<div class="ghf"><input readonly value="'+ghGet("id")+'" aria-label="Código del gist" id="avid"><button class="btn ghost" type="button" data-av="copy">Copiar</button></div>'+
+    '<p class="small"><a href="https://github.com/marcosreinah88-design/plan-volumen/settings/secrets/actions/new" target="_blank" rel="noopener">Abrir la página del secreto en GitHub</a>: en Name escribe '+AV.secret+', en Secret pega el código y toca Add secret.</p>'+
+    '<div class="gbtns"><button class="btn ghost" type="button" data-av="off">Apagar avisos aquí</button></div></div>';
+}
+document.addEventListener("click",function(e){var b=e.target.closest("[data-av]");if(!b)return;var a=b.dataset.av;
+  if(a==="on")avEnable();
+  else if(a==="copy"){var v=ghGet("id");(navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(function(){toast("Código copiado");},function(){$("avid").select();toast("Selecciona y copia el código");});}
+  else if(a==="off"){navigator.serviceWorker.ready.then(function(r){return r.pushManager.getSubscription();}).then(function(s){return s&&s.unsubscribe();}).catch(function(){}).then(function(){ghSet("av","");renderBackup();toast("Avisos apagados en este celular");});}});
 function ghCard(){
   if(!ghGet("tok"))return '<div class="ghs"><h4>Sincronizar Mac y celular</h4><p class="small muted">Para que lo que anotes en un equipo aparezca en el otro, conecta tu GitHub. Se hace una sola vez en cada equipo:</p>'+
     '<ol class="small"><li>Toca <a href="https://github.com/settings/tokens/new?scopes=gist&amp;description=Plan%20de%20Volumen" target="_blank" rel="noopener">Crear clave en GitHub</a> (ya trae marcado solo el permiso <b>gist</b>).</li><li>En <b>Expiration</b> elige <b>No expiration</b>, baja y toca <b>Generate token</b>.</li><li>Copia la clave (empieza con <b>ghp_</b>) y pégala aquí. Guárdala en Notas para pegarla también en el otro equipo.</li></ol>'+
     '<form class="ghf" id="ghf"><input id="ghtok" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ghp_…" aria-label="Clave de GitHub"><button class="btn pri" type="submit">Conectar</button></form></div>';
   var L=+ghGet("last")||0;
   return '<div class="ghs"><h4>Sincronizar Mac y celular</h4>'+(GH.err?'<p class="note">'+GH.err+'</p>':'<p class="small" style="color:var(--ok)">Conectado'+(L?' · última vez '+pad(new Date(L).getHours())+':'+pad(new Date(L).getMinutes()):'')+'</p>')+
-    '<p class="small muted">Se sincroniza solo cada vez que anotas algo y al abrir la app.</p><div class="gbtns"><button class="btn ghost" type="button" data-gh="now">Sincronizar ahora</button><button class="btn ghost" type="button" data-gh="off">Desconectar</button></div></div>';
+    '<p class="small muted">Se sincroniza solo cada vez que anotas algo y al abrir la app.</p><div class="gbtns"><button class="btn ghost" type="button" data-gh="now">Sincronizar ahora</button><button class="btn ghost" type="button" data-gh="off">Desconectar</button></div></div>'+avCard();
 }
 document.addEventListener("submit",function(e){if(e.target.id!=="ghf")return;e.preventDefault();var v=($("ghtok").value||"").trim();
   if(!/^(ghp_|github_pat_)[A-Za-z0-9_]{20,}$/.test(v)){toast("Esa no parece una clave de GitHub (empieza con ghp_)");return;}
