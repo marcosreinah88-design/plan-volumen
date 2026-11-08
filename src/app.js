@@ -358,10 +358,10 @@ function renderHero(){
 }
 function updRings(){
   var d=selDay,k=KEYS[d.getDay()],m=mealsDone(d),tot=planTotal(d),ds=doneSets(d);
-  setRing("rk",m.kc/KCAL,fmt.format(m.kc),"KCAL","Calorías","de "+fmt.format(KCAL));
-  setRing("rp",m.p/PROT,m.p,"G PROT","Proteína","de "+PROT+" g");
-  if(tot)setRing("rs",ds/tot,ds,"SERIES","Entreno","de "+tot);
-  else if(gymClosed(d))setRing("rs",0,"—","CERRADO","Entreno","gimnasio cerrado");else setRing("rs",0,"—","DESCANSO","Entreno","día libre");
+  setRing("rk",m.kc/KCAL,fmt.format(m.kc),"kcal","Calorías","de "+fmt.format(KCAL));
+  setRing("rp",m.p/PROT,m.p,"g prot","Proteína","de "+PROT+" g");
+  if(tot)setRing("rs",ds/tot,ds,"series","Entreno","de "+tot);
+  else if(gymClosed(d))setRing("rs",0,"—","cerrado","Entreno","gimnasio cerrado");else setRing("rs",0,"—","descanso","Entreno","día libre");
 }
 function renderWeek(){
   var mon=mondayOf(TODAY),h="";
@@ -408,10 +408,10 @@ function renderNext(){
     if(!nx&&x.s>n&&!done)nx=x;
   });
   var x,lab,cd,cdl,dday=d;
-  if(cur&&cur.type==="gym"){x=cur;lab="Ahora";cd=dur(cur.e-n);cdl="QUEDAN";}
+  if(cur&&cur.type==="gym"){x=cur;lab="Ahora";cd=dur(cur.e-n);cdl="Quedan";}
   else if(due){x=due;lab="Ahora · al salir del gym";cd="";cdl="";}
-  else if(nx){x=nx;lab="Siguiente · "+nx.a;cd=dur(nx.s-n);cdl="FALTAN";}
-  else if(cur){x=cur;lab="Ahora";cd=dur(cur.e-n);cdl="TERMINA EN";}
+  else if(nx){x=nx;lab="Siguiente · "+nx.a;cd=dur(nx.s-n);cdl="Faltan";}
+  else if(cur){x=cur;lab="Ahora";cd=dur(cur.e-n);cdl="Termina en";}
   else{dday=addD(d,1);var t=dayItems(dday);x=t[0];lab="Mañana · "+x.a;cd="";cdl="";}
   var tt=itemTitle(dday,x),col=x.type==="gym"?"var(--gym)":x.type==="cls"?"var(--muted)":x.type==="cre"?"var(--d-jue)":"var(--food)";
   box.innerHTML='<div class="next" style="--nc:'+col+'"><div class="ico">'+ic(x.type==="cls"?"cls":x.type==="gym"?"gym":x.type==="prep"?"prep":x.type==="cre"?"cre":"meal")+'</div><div class="t"><span class="eyebrow">'+lab+'</span><b>'+tt[0]+'</b><span>'+tt[1]+'</span></div>'+(cd?'<div class="cd">'+cd+'<small>'+cdl+'</small></div>':'')+'</div>';
@@ -829,7 +829,7 @@ document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("lb").hi
 function renderComida(){
   var thisM=weekMenu(TODAY);
   $("cmsub").textContent="Esta semana: Menú "+(thisM+1);
-  $("menus").innerHTML=MENUS.map(function(M,i){return '<button type="button" class="mn" data-m="'+i+'" aria-pressed="'+(i===cmMenu)+'">'+(i===thisM?'<em>ESTA SEMANA</em>':'<em>&nbsp;</em>')+'<b>Menú '+(i+1)+'</b><span>'+M.n+'</span></button>';}).join("");
+  $("menus").innerHTML=MENUS.map(function(M,i){return '<button type="button" class="mn" data-m="'+i+'" aria-pressed="'+(i===cmMenu)+'">'+(i===thisM?'<em>Esta semana</em>':'<em>&nbsp;</em>')+'<b>Menú '+(i+1)+'</b><span>'+M.n+'</span></button>';}).join("");
   $("cmseg").querySelectorAll("button").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.s===cmSeg);});
   $("menus").hidden=(cmSeg==="inter"||cmSeg==="num");
   var M=MENUS[cmMenu],h="";
