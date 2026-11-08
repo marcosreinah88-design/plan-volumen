@@ -794,6 +794,8 @@ button.pill{appearance:none;background:transparent;cursor:pointer;font-family:va
 .gymcard.gcl{background:var(--surface);border-color:var(--line)}
 .gymcard.gcl .h b{color:var(--muted)}
 
+.ghs{border-top:1px solid var(--line);padding-top:12px;display:grid;gap:8px}.ghs h4{margin:0;font-size:.98rem}.ghs ol{margin:0;padding-left:1.2em;display:grid;gap:4px}.ghs a{color:var(--acc,inherit);text-decoration:underline}.ghf{display:flex;gap:8px}.ghf input{flex:1;min-width:0;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card,transparent);color:inherit}
+
 </style>
 
 <header class="top">
@@ -1204,7 +1206,7 @@ var S={col:null,cache:{},timer:{},busy:{},again:{},dirty:{},mode:"local"};
 function lsGet(k){try{var v=localStorage.getItem("pvm:"+k);return v?JSON.parse(v):null;}catch(e){return null;}}
 function lsSet(k,v){try{localStorage.setItem("pvm:"+k,JSON.stringify(v));}catch(e){}}
 function sget(k){if(!(k in S.cache))S.cache[k]=lsGet(k);return S.cache[k];}
-function sput(k,v){v._t=Date.now();S.cache[k]=v;lsSet(k,v);S.dirty[k]=1;if(S.col){clearTimeout(S.timer[k]);S.timer[k]=setTimeout(function(){flush(k);},700);}}
+function sput(k,v){v._t=Date.now();S.cache[k]=v;lsSet(k,v);S.dirty[k]=1;if(PWA)ghSoon();if(S.col){clearTimeout(S.timer[k]);S.timer[k]=setTimeout(function(){flush(k);},700);}}
 function flush(k){
   if(!S.col)return;
   if(S.busy[k]){S.again[k]=1;return;}
@@ -1225,7 +1227,7 @@ function flush(k){
 function setSync(m){
   S.mode=m;var d=$("syncdot"),t=$("synctxt");
   d.classList.toggle("on",m==="on"||m==="busy");
-  t.textContent=m==="on"?"Guardado":m==="busy"?"Guardando…":PWA?"En tu equipo":"Este equipo";
+  t.textContent=m==="on"?(PWA?"Sincronizado":"Guardado"):m==="busy"?"Guardando…":PWA?"En tu equipo":"Este equipo";
   $("syncpill").title=m==="local"?(PWA?"Tus registros se guardan en este equipo. Haz un respaldo en Progreso cada semana":"Tus registros se guardan solo en este navegador"):"Tus registros se guardan en tu cuenta y te siguen a cualquier dispositivo";
 }
 function dk(d){return "d-"+iso(d);}
@@ -2326,7 +2328,7 @@ function renderBackup(){var el=$("pgbk");if(!el)return;if(!PWA){el.hidden=true;r
   var L=bkLast(),n=Object.keys(allDocs()).filter(function(k){return k.indexOf("d-")===0;}).length,old=!L||Date.now()-L>7*864e5;
   el.innerHTML='<div class="sec-h"><h3 style="font-size:1.05rem">Respaldo</h3><span class="r eyebrow">'+n+' días guardados</span></div><p class="small muted">Tus registros viven en este equipo. Guarda un respaldo cada semana (en Archivos o iCloud) por si cambias de celular o borras la app.</p>'+
     (old?'<p class="note">'+(L?'Tu último respaldo fue el '+new Date(L).getDate()+' '+MES3[new Date(L).getMonth()]+'. Ya toca otro.':'Todavía no tienes respaldo.')+'</p>':'<p class="small" style="color:var(--ok)">Último respaldo: '+new Date(L).getDate()+' '+MES3[new Date(L).getMonth()]+'</p>')+
-    '<div class="gbtns"><button class="btn pri" type="button" data-bk="exp">Guardar respaldo</button><label class="btn ghost" style="cursor:pointer">Cargar respaldo<input type="file" accept=".json,application/json" id="bkin" hidden></label></div>';}
+    '<div class="gbtns"><button class="btn pri" type="button" data-bk="exp">Guardar respaldo</button><label class="btn ghost" style="cursor:pointer">Cargar respaldo<input type="file" accept=".json,application/json" id="bkin" hidden></label></div>'+ghCard();}
 function bkExport(){var D={app:"plan-volumen",v:1,at:new Date().toISOString(),docs:allDocs()},txt=JSON.stringify(D),nm="plan-volumen-respaldo-"+iso(TODAY)+".json";
   var done=function(){try{localStorage.setItem("pvmbk:last",String(Date.now()));}catch(e){}renderBackup();toast("Respaldo listo");};
   try{var f=new File([txt],nm,{type:"application/json"});if(navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f],title:"Respaldo Plan de Volumen"}).then(done,function(){});return;}}catch(e){}
@@ -2337,6 +2339,81 @@ function bkImport(file){var r=new FileReader();r.onload=function(){var D;try{D=J
   toast("Respaldo cargado: "+n+" registros");renderAll();};r.readAsText(file);}
 document.addEventListener("click",function(e){var b=e.target.closest("[data-bk]");if(b&&b.dataset.bk==="exp")bkExport();});
 document.addEventListener("change",function(e){if(e.target.id==="bkin"&&e.target.files[0]){bkImport(e.target.files[0]);e.target.value="";}});
+
+/* ================= sincronizar entre equipos (app instalable) =================
+   Tus registros se guardan en un gist secreto de tu GitHub. Cada equipo baja la copia, la junta con la suya (mergeDocs) y sube el resultado. */
+var GH={busy:0,again:0,timer:null,err:"",fname:"plan-volumen-sync.json",desc:"Plan de Volumen · sincronización (no borrar)"};
+function ghGet(k){try{return localStorage.getItem("pvmgh:"+k)||"";}catch(e){return "";}}
+function ghSet(k,v){try{if(v)localStorage.setItem("pvmgh:"+k,v);else localStorage.removeItem("pvmgh:"+k);}catch(e){}}
+function ghOn(){return PWA&&!!ghGet("tok");}
+function ghApi(path,method,body){
+  return fetch("https://api.github.com"+path,{method:method||"GET",cache:"no-store",headers:{"Authorization":"Bearer "+ghGet("tok"),"Accept":"application/vnd.github+json","Content-Type":"application/json"},body:body?JSON.stringify(body):undefined})
+    .then(function(r){if(!r.ok){var e=new Error("gh "+r.status);e.status=r.status;throw e;}return r.json();});
+}
+function ghPack(docs){return JSON.stringify({app:"plan-volumen",v:1,at:new Date().toISOString(),docs:docs});}
+function ghRead(g){var f=g&&g.files&&g.files[GH.fname];if(!f)return Promise.resolve({});
+  var p=f.truncated?fetch(f.raw_url,{cache:"no-store"}).then(function(r){return r.text();}):Promise.resolve(f.content||"");
+  return p.then(function(t){try{var D=JSON.parse(t);return D&&D.docs||{};}catch(e){return {};}});}
+function ghFind(){
+  var id=ghGet("id");
+  if(id)return ghApi("/gists/"+id).catch(function(e){if(e.status===404){ghSet("id","");return ghFind();}throw e;});
+  return ghApi("/gists?per_page=100").then(function(list){
+    var g=(list||[]).filter(function(x){return x.files&&x.files[GH.fname];})[0];
+    if(g){ghSet("id",g.id);return ghApi("/gists/"+g.id);}
+    var files={};files[GH.fname]={content:ghPack(allDocs())};
+    return ghApi("/gists","POST",{description:GH.desc,public:false,files:files}).then(function(n){ghSet("id",n.id);return n;});
+  });
+}
+function ghSoon(){if(!ghOn())return;clearTimeout(GH.timer);GH.timer=setTimeout(ghSync,2500);}
+function ghSync(manual){
+  if(!ghOn())return;
+  if(GH.busy){GH.again=1;return;}
+  GH.busy=1;setSync("busy");
+  ghFind().then(ghRead).then(function(rem){
+    var loc=allDocs(),keys={},changed=0,push=0,out={};
+    Object.keys(S.cache).forEach(function(k){if(S.cache[k])loc[k]=S.cache[k];});
+    Object.keys(loc).concat(Object.keys(rem)).forEach(function(k){keys[k]=1;});
+    Object.keys(keys).forEach(function(k){
+      if(!/^(d-\d{4}-\d\d-\d\d|weights|best|last|shop|cfg|tanita)$/.test(k))return;
+      var l=loc[k],r=rem[k],m=mergeDocs(k,l||null,r||null);if(!m)return;out[k]=m;
+      var ms=JSON.stringify(m);
+      if(!l||ms!==JSON.stringify(l)){S.cache[k]=m;lsSet(k,m);changed=1;}
+      if(!r||ms!==JSON.stringify(r))push=1;
+    });
+    if(!push)return changed;
+    var files={};files[GH.fname]={content:ghPack(out)};
+    return ghApi("/gists/"+ghGet("id"),"PATCH",{files:files}).then(function(){return changed;});
+  }).then(function(changed){
+    GH.busy=0;GH.err="";ghSet("last",String(Date.now()));setSync("on");
+    if(changed){var a=document.activeElement;if(!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)))renderAll();}
+    else if(view==="progreso")renderBackup();
+    if(manual)toast("Sincronizado");
+    if(GH.again){GH.again=0;ghSoon();}
+  },function(e){
+    GH.busy=0;setSync("local");
+    if(e&&(e.status===401||e.status===403)){GH.err="GitHub no aceptó tu clave. Crea una nueva (con permiso gist) y pégala otra vez.";}
+    else GH.err="No hay conexión con GitHub. Lo que anotes se guarda aquí y se sube cuando vuelva el internet.";
+    if(manual||e&&e.status)toast(GH.err);
+    if(view==="progreso")renderBackup();
+  });
+}
+function ghCard(){
+  if(!ghGet("tok"))return '<div class="ghs"><h4>Sincronizar Mac y celular</h4><p class="small muted">Para que lo que anotes en un equipo aparezca en el otro, conecta tu GitHub. Se hace una sola vez en cada equipo:</p>'+
+    '<ol class="small"><li>Toca <a href="https://github.com/settings/tokens/new?scopes=gist&amp;description=Plan%20de%20Volumen" target="_blank" rel="noopener">Crear clave en GitHub</a> (ya trae marcado solo el permiso <b>gist</b>).</li><li>En <b>Expiration</b> elige <b>No expiration</b>, baja y toca <b>Generate token</b>.</li><li>Copia la clave (empieza con <b>ghp_</b>) y pégala aquí. Guárdala en Notas para pegarla también en el otro equipo.</li></ol>'+
+    '<form class="ghf" id="ghf"><input id="ghtok" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ghp_…" aria-label="Clave de GitHub"><button class="btn pri" type="submit">Conectar</button></form></div>';
+  var L=+ghGet("last")||0;
+  return '<div class="ghs"><h4>Sincronizar Mac y celular</h4>'+(GH.err?'<p class="note">'+GH.err+'</p>':'<p class="small" style="color:var(--ok)">Conectado'+(L?' · última vez '+pad(new Date(L).getHours())+':'+pad(new Date(L).getMinutes()):'')+'</p>')+
+    '<p class="small muted">Se sincroniza solo cada vez que anotas algo y al abrir la app.</p><div class="gbtns"><button class="btn ghost" type="button" data-gh="now">Sincronizar ahora</button><button class="btn ghost" type="button" data-gh="off">Desconectar</button></div></div>';
+}
+document.addEventListener("submit",function(e){if(e.target.id!=="ghf")return;e.preventDefault();var v=($("ghtok").value||"").trim();
+  if(!/^(ghp_|github_pat_)[A-Za-z0-9_]{20,}$/.test(v)){toast("Esa no parece una clave de GitHub (empieza con ghp_)");return;}
+  ghSet("tok",v);ghSet("id","");GH.err="";renderBackup();ghSync(true);});
+document.addEventListener("click",function(e){var b=e.target.closest("[data-gh]");if(!b)return;
+  if(b.dataset.gh==="now")ghSync(true);
+  else if(b.dataset.gh==="off"){ghSet("tok","");ghSet("id","");ghSet("last","");GH.err="";setSync("local");renderBackup();toast("Desconectado. Tus registros siguen en este equipo");}});
+document.addEventListener("visibilitychange",function(){if(!document.hidden&&ghOn())ghSync();});
+window.addEventListener("online",function(){if(ghOn())ghSync();});
+setInterval(function(){if(!document.hidden&&ghOn())ghSync();},120000);
 
 /* ================= GUÍA ================= */
 function renderGuia(){
@@ -2417,6 +2494,7 @@ $("pgdias").addEventListener("click",function(e){var c=e.target.closest(".dc[dat
 if(modeOf(TODAY)==="sup")wsel="sup";if(dayRK(TODAY))wsel=dayRK(TODAY);
 renderAll();show(started?"entreno":"hoy");
 connect();
+if(ghOn())ghSync();
 })();
 
 </script>

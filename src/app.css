@@ -772,3 +772,5 @@ button.pill{appearance:none;background:transparent;cursor:pointer;font-family:va
 .gbtns .btn.ghost{flex:1 1 auto}
 .gymcard.gcl{background:var(--surface);border-color:var(--line)}
 .gymcard.gcl .h b{color:var(--muted)}
+
+.ghs{border-top:1px solid var(--line);padding-top:12px;display:grid;gap:8px}.ghs h4{margin:0;font-size:.98rem}.ghs ol{margin:0;padding-left:1.2em;display:grid;gap:4px}.ghs a{color:var(--acc,inherit);text-decoration:underline}.ghf{display:flex;gap:8px}.ghf input{flex:1;min-width:0;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card,transparent);color:inherit}
