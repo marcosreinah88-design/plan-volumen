@@ -2454,12 +2454,12 @@ function avEnable(){
 }
 function avCard(){
   var h='<div class="ghs"><h4>Avisos en el celular</h4>';
-  if(!avCan()||!avStandalone())return h+'<p class="small muted">Los avisos funcionan en el iPhone con la app instalada: en Safari toca Compartir → Agregar a pantalla de inicio y ábrela desde el ícono. Ahí aparece el botón para activarlos.</p></div>';
-  if(!avOn())return h+'<p class="small muted">Te aviso tus comidas, la creatina, 30 min antes del gym, el medicamento y los días de pesarte. Si ya lo marcaste, no te llega.</p><div class="gbtns"><button class="btn pri" type="button" data-av="on">Activar avisos</button></div></div>';
+  var code='<p class="small muted">Código para el secreto <b>'+AV.secret+'</b> en GitHub:</p><div class="ghf"><input readonly value="'+ghGet("id")+'" aria-label="Código del gist" id="avid"><button class="btn ghost" type="button" data-av="copy">Copiar</button></div><p class="small"><a href="https://github.com/marcosreinah88-design/plan-volumen/settings/secrets/actions/new" target="_blank" rel="noopener">Abrir la página del secreto en GitHub</a>: en Name escribe '+AV.secret+', en Secret pega el código y toca Add secret.</p>';
+  if(!ghGet("id"))code='';
+  if(!avCan()||!avStandalone())return h+code+'<p class="small muted">Los avisos funcionan en el iPhone con la app instalada: en Safari toca Compartir → Agregar a pantalla de inicio y ábrela desde el ícono. Ahí aparece el botón para activarlos.</p></div>';
+  if(!avOn())return h+'<p class="small muted">Te aviso tus comidas, la creatina, 30 min antes del gym, el medicamento y los días de pesarte. Si ya lo marcaste, no te llega.</p><div class="gbtns"><button class="btn pri" type="button" data-av="on">Activar avisos</button></div>'+code+'</div>';
   return h+'<p class="small" style="color:var(--ok)">Activados en este celular'+(Notification.permission!=="granted"?' (pero el permiso está apagado en Ajustes)':'')+'</p>'+
-    '<p class="small muted">Si todavía no te llega ninguno, falta un paso que se hace una sola vez: en GitHub agrega un secreto llamado <b>'+AV.secret+'</b> con este código.</p>'+
-    '<div class="ghf"><input readonly value="'+ghGet("id")+'" aria-label="Código del gist" id="avid"><button class="btn ghost" type="button" data-av="copy">Copiar</button></div>'+
-    '<p class="small"><a href="https://github.com/marcosreinah88-design/plan-volumen/settings/secrets/actions/new" target="_blank" rel="noopener">Abrir la página del secreto en GitHub</a>: en Name escribe '+AV.secret+', en Secret pega el código y toca Add secret.</p>'+
+    '<p class="small muted">Si todavía no te llega ninguno, falta un paso que se hace una sola vez:</p>'+code+
     '<div class="gbtns"><button class="btn ghost" type="button" data-av="off">Apagar avisos aquí</button></div></div>';
 }
 document.addEventListener("click",function(e){var b=e.target.closest("[data-av]");if(!b)return;var a=b.dataset.av;

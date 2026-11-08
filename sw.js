@@ -1,5 +1,5 @@
-/* versión 97aee3daa1: cada build cambia este número y el teléfono baja la app nueva */
-var C="pv-97aee3daa1",FILES=["./","index.html","manifest.webmanifest","icons/icon-180.png","icons/icon-192.png","icons/icon-512.png"];
+/* versión 38858043ac: cada build cambia este número y el teléfono baja la app nueva */
+var C="pv-38858043ac",FILES=["./","index.html","manifest.webmanifest","icons/icon-180.png","icons/icon-192.png","icons/icon-512.png"];
 self.addEventListener("install",function(e){self.skipWaiting();e.waitUntil(caches.open(C).then(function(c){return c.addAll(FILES);}));});
 self.addEventListener("activate",function(e){e.waitUntil(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k!==C;}).map(function(k){return caches.delete(k);}));}).then(function(){return self.clients.claim();}));});
 /* primero internet (para que siempre tengas la última versión), y si no hay señal, la copia guardada */
