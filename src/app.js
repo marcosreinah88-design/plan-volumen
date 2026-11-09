@@ -321,13 +321,19 @@ function setRK(d,k){var dd=dayDoc(d),def=KEYS[d.getDay()];delete dd.gc;if(k===de
 /* gimnasio cerrado ese día (dd.gc): si no hiciste series, el gym no cuenta ni en racha ni en estadísticas; la dieta sí, como el domingo */
 function gymClosed(d){var v=sget(dk(d));if(!v||!v.gc)return false;var s=v.s||{};return !Object.keys(s).some(function(x){return (s[x]||[]).some(rowDone);});}
 function planKey(d){return gymClosed(d)?null:planKey0(d);}
-function planKey0(d){var rk=dayRK(d);if(rk)return rk;var m=modeOf(d),k=KEYS[d.getDay()],done=doneSets(d)>0;
+function planKey0(d){var rk=dayRK(d);if(rk)return rk;var m=modeOf(d),k=KEYS[d.getDay()],done=rawDone(d)>0;
   if(m==="sup")return done?"sup":null;
   if(m==="ocu")return OCU.indexOf(k)>=0?k:(done&&GD[k]?k:null);
   return GD[k]?k:null;}
 function planTotal(d){var k=planKey(d);if(!k)return 0;var cap=capFor(d),t=0;exList(k,d).forEach(function(e){t+=Math.min(nsets(e.sr),cap);});return t;}
 function entTotal(k,d){var cap=capFor(d),t=0;exList(k,d).forEach(function(e){t+=Math.min(nsets(e.sr),cap);});return t;}
-function doneSets(d){var dd=dayDoc(d),n=0;Object.keys(dd.s).forEach(function(x){(dd.s[x]||[]).forEach(function(r){if(r&&r[2])n++;});});return n;}
+/* series hechas de un día: solo las de la rutina que cuenta ese día y hasta el número de series que toca
+   (antes contaba cualquier serie guardada en el día: otra rutina, el ejercicio alterno o series de más) */
+function rawDone(d){var dd=dayDoc(d),n=0;Object.keys(dd.s).forEach(function(x){(dd.s[x]||[]).forEach(function(r){if(r&&r[2])n++;});});return n;}
+function doneSets(d){var k=planKey(d);if(!k)return rawDone(d);var dd=dayDoc(d),cap=capFor(d),n=0;
+  exList(k,d).forEach(function(e){var b=e._base||e,ids=[exId(e)];if(b!==e)ids.push(exId(b));else if(b.alt)ids.push(exId(b.alt));
+    var lim=Math.min(nsets(e.sr),cap);for(var j=0;j<lim;j++){if(ids.some(function(id){return rowDone((dd.s[id]||[])[j]);}))n++;}});
+  return n;}
 /* batido opcional: 1 scoop (≈30 g) en agua = 3 equivalentes de AOA muy bajo en grasa */
 var BAT={kcal:120,p:21};
 function hm(m){return Math.floor(m/60)+":"+pad(m%60);}
