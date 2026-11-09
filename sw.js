@@ -1,5 +1,5 @@
-/* versión 74060a3e3c: cada build cambia este número y el teléfono baja la app nueva */
-var C="pv-74060a3e3c",FILES=["./","index.html","manifest.webmanifest","icons/icon-180.png","icons/icon-192.png","icons/icon-512.png"];
+/* versión 3fcead86aa: cada build cambia este número y el teléfono baja la app nueva */
+var C="pv-3fcead86aa",FILES=["./","index.html","manifest.webmanifest","icons/icon-180.png","icons/icon-192.png","icons/icon-512.png"];
 self.addEventListener("install",function(e){self.skipWaiting();e.waitUntil(caches.open(C).then(function(c){return c.addAll(FILES);}));});
 self.addEventListener("activate",function(e){e.waitUntil(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k!==C&&k!=="pv-fonts";}).map(function(k){return caches.delete(k);}));}).then(function(){return self.clients.claim();}));});
 /* Arranque sin internet o con señal mala: la app se pide a internet, pero si no contesta en 3 s

@@ -291,6 +291,10 @@ function routine9(G){
   /* viernes: dominadas asistidas (o jalón supino); lunes: press francés con mancuernas (no hay barra EZ) */
   G.vie.ex=G.vie.ex.map(function(e){return /^Dominadas/.test(e.n)?JSON.parse(JSON.stringify(PD.nov9.dom)):e;});
   G.lun.ex=G.lun.ex.map(function(e){return /^Press francés/.test(e.n)?JSON.parse(JSON.stringify(PD.nov9.pf)):e;});
+  /* lunes: aperturas en máquina (pec deck) en vez de polea, pedido el 9 nov; la polea queda como opción si la máquina está ocupada */
+  G.lun.ex=G.lun.ex.map(function(e){return /^Aperturas en polea/.test(e.n)?JSON.parse(JSON.stringify(PD.nov9.ap)):e;});
+  /* lunes: elevaciones laterales con mancuernas en vez de polea (no le gustó la polea, 9 nov); mismo ejercicio que jueves, comparte historial */
+  G.lun.ex=G.lun.ex.map(function(e){return /^Elevaciones laterales en polea/.test(e.n)?JSON.parse(JSON.stringify(G.jue.ex.filter(function(x){return /^Elevaciones laterales con mancuernas/.test(x.n);})[0]||e)):e;});
   G.mie.tm="≈80 min · 20 series";G.vie.tm="≈70 min · 16 series";G.sab.tm="≈95 min · 24 series";
   return G;
 }
@@ -804,7 +808,7 @@ var lbFrom=null;
 /* ===== mapa de músculos: cuerpo de frente y de espalda con lo que trabaja cada ejercicio ===== */
 var MUSN={pecS:"pecho superior",pec:"pecho",dA:"hombro frontal",dL:"hombro lateral",dP:"hombro posterior",bic:"bíceps",brq:"braquial",ant:"antebrazo",abs:"abdomen",obl:"oblicuos",cua:"cuádriceps",adu:"aductores",trp:"trapecio",lat:"dorsal ancho",rom:"espalda media",tri:"tríceps",lum:"lumbares",glu:"glúteos",isq:"isquiotibiales",gem:"gemelos",sol:"sóleo"};
 var MUSX=[
- ["press inclinado",["pecS","pec"],["dA","tri"]],["press de banca plano",["pec"],["dA","tri"]],["aperturas en polea",["pec"],["dA"]],
+ ["press inclinado",["pecS","pec"],["dA","tri"]],["press de banca plano",["pec"],["dA","tri"]],["aperturas en polea",["pec"],["dA"]],["aperturas en maquina",["pec"],["dA"]],
  ["elevaciones laterales",["dL"],["trp"]],["extension de triceps",["tri"],[]],["press frances",["tri"],[]],["jalon de triceps",["tri"],[]],
  ["jalon al pecho",["lat"],["bic","rom","dP"]],["remo con pecho apoyado",["rom","lat"],["dP","bic","trp"]],["remo",["lat","rom"],["bic","dP"]],
  ["pullover",["lat"],["tri","pec"]],["aperturas inversas",["dP"],["rom","trp"]],["face pull",["dP"],["rom","trp"]],
