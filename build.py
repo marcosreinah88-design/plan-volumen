@@ -19,6 +19,7 @@ head='''<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
+<!--pv-app-->
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
@@ -60,10 +61,33 @@ open(out+'manifest.webmanifest','w',encoding='utf-8').write(json.dumps({
 open(out+'sw.js','w',encoding='utf-8').write('''/* versión %s: cada build cambia este número y el teléfono baja la app nueva */
 var C="pv-%s",FILES=["./","index.html","manifest.webmanifest","icons/icon-180.png","icons/icon-192.png","icons/icon-512.png"];
 self.addEventListener("install",function(e){self.skipWaiting();e.waitUntil(caches.open(C).then(function(c){return c.addAll(FILES);}));});
-self.addEventListener("activate",function(e){e.waitUntil(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k!==C;}).map(function(k){return caches.delete(k);}));}).then(function(){return self.clients.claim();}));});
-/* primero internet (para que siempre tengas la última versión), y si no hay señal, la copia guardada */
-self.addEventListener("fetch",function(e){var u=new URL(e.request.url);if(e.request.method!=="GET"||u.origin!==location.origin)return;
-  e.respondWith(fetch(e.request,{cache:"no-store"}).then(function(r){var cp=r.clone();caches.open(C).then(function(c){c.put(e.request,cp);});return r;}).catch(function(){return caches.match(e.request,{ignoreSearch:true}).then(function(r){return r||caches.match("index.html");});}));});
+self.addEventListener("activate",function(e){e.waitUntil(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k!==C&&k!=="pv-fonts";}).map(function(k){return caches.delete(k);}));}).then(function(){return self.clients.claim();}));});
+/* Arranque sin internet o con señal mala: la app se pide a internet, pero si no contesta en 3 s
+   (o falla, o regresa una página rara del wifi del gym) se abre la copia guardada. La versión nueva
+   se sigue bajando en segundo plano y queda lista para la próxima vez. */
+var WAIT=3000,FONTS="pv-fonts";
+function ok(r){return r&&r.ok&&r.type==="basic"&&!r.redirected;}
+/* la app de verdad trae la marca pv-app; si no (página del wifi, error), no se guarda ni se muestra */
+function revisar(r,nav){if(!ok(r))return Promise.resolve(false);if(!nav)return Promise.resolve(true);
+  return r.clone().text().then(function(t){return t.indexOf("<!--pv-app-->")>=0;},function(){return false;});}
+function guardar(req,r,nav){return revisar(r,nav).then(function(b){if(!b)return null;var cp=r.clone();caches.open(C).then(function(c){return c.put(req,cp);}).catch(function(){});return r;});}
+function copia(req,nav){return caches.match(req,{ignoreSearch:true}).then(function(r){return r||(nav?caches.match("index.html").then(function(x){return x||caches.match("./");}):undefined);});}
+function app(e){var req=e.request,nav=req.mode==="navigate",key=nav?new Request(new URL("./",location.href).href):req;
+  var red=fetch(req.url,{cache:"no-store",credentials:"same-origin"}).then(function(r){return guardar(key,r,nav);});
+  e.waitUntil(red.catch(function(){}));
+  return new Promise(function(res){var listo=false,t;
+    function deCopia(){if(listo)return;copia(key,nav).then(function(r){if(listo)return;if(r){listo=true;clearTimeout(t);res(r);}});}
+    t=setTimeout(deCopia,WAIT);
+    red.then(function(r){if(listo)return;if(r){listo=true;clearTimeout(t);res(r);}else{copia(key,nav).then(function(c){if(listo)return;listo=true;clearTimeout(t);res(c||Response.error());});}},
+      function(){copia(key,nav).then(function(c){if(listo)return;listo=true;clearTimeout(t);res(c||Response.error());});});});}
+/* letras de Google: se guardan la primera vez y después salen de la copia (sin internet no bloquean la pantalla) */
+function letras(e){var req=e.request;return caches.open(FONTS).then(function(c){return c.match(req).then(function(h){if(h)return h;
+  return Promise.race([fetch(req).then(function(r){if(r&&(r.ok||r.type==="opaque"))c.put(req,r.clone()).catch(function(){});return r;}),
+    new Promise(function(_,no){setTimeout(no,WAIT);})]).catch(function(){
+      return /googleapis/.test(req.url)?new Response("",{headers:{"Content-Type":"text/css"}}):Response.error();});});});}
+self.addEventListener("fetch",function(e){if(e.request.method!=="GET")return;var u=new URL(e.request.url);
+  if(u.origin===location.origin){e.respondWith(app(e));return;}
+  if(u.hostname==="fonts.googleapis.com"||u.hostname==="fonts.gstatic.com")e.respondWith(letras(e));});
 /* avisos: los manda GitHub (Actions) y aquí se muestran */
 self.addEventListener("push",function(e){var d={};try{d=e.data?e.data.json():{};}catch(x){d={t:"Plan de Volumen",b:e.data?e.data.text():""};}
   e.waitUntil(self.registration.showNotification(d.t||"Plan de Volumen",{body:d.b||"",tag:d.tag||undefined,icon:"icons/icon-192.png",badge:"icons/icon-192.png",data:{url:"./"}}));});
