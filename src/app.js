@@ -1022,7 +1022,7 @@ $("pgtan").addEventListener("submit",function(e){
 /* ===== leer la hoja de la Tanita con IA (Gemini): la clave es de Marcos y vive solo en este equipo (pvmgem:key);
    la foto o el PDF van directo a Google y nada se guarda hasta que él revisa los números y toca "Guardar medición" ===== */
 var GEM={busy:false,msg:"",ok:false};
-var GEM_MODELS=["gemini-flash-latest","gemini-2.5-flash","gemini-2.0-flash"];
+var GEM_MODELS=["gemini-3.8-flash","gemini-3.5-flash","gemini-flash-latest"];
 var GEM_PROMPT="Eres un lector de reportes de composición corporal Tanita (por ejemplo MC-980, MC-780, BC-418). Lee el documento y devuelve SOLO un objeto JSON con estas claves. Usa null cuando el dato no aparezca; no inventes ni estimes nada. Números con punto decimal, sin unidades.\n"+
  "fecha: fecha de la medición en formato AAAA-MM-DD (o null)\n"+
  "u: unidad en que vienen las masas en la hoja, \"kg\" o \"lb\"\n"+
@@ -1035,8 +1035,8 @@ function gemKey(){try{return localStorage.getItem("pvmgem:key")||"";}catch(e){re
 function gemSetKey(v){try{if(v)localStorage.setItem("pvmgem:key",v);else localStorage.removeItem("pvmgem:key");}catch(e){}}
 function gemKeyCard(inForm){
   return '<div class="ghs gfirst"><p class="small muted">'+(inForm?'Para que la IA lea tu hoja necesita una clave gratis de Google Gemini. Se pega una sola vez en cada equipo:':'Con una clave gratis de Google Gemini, la app lee la foto o el PDF de tu Tanita y llena la medición sola. Se pega una sola vez en cada equipo:')+'</p>'+
-    '<ol class="small"><li>Abre <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> con tu cuenta de Google y acepta los términos.</li><li>Toca <b>Create API key</b> (crear clave). Si te pide proyecto, deja el que te propone.</li><li>Copia la clave (empieza con <b>AIza</b>) y pégala aquí. No pide tarjeta.</li></ol>'+
-    '<div class="ghf"><input id="gemkey" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="AIza…" aria-label="Clave de Gemini"><button class="btn pri" type="button" data-gem="save">Guardar clave</button></div>'+
+    '<ol class="small"><li>Abre <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> con tu cuenta de Google y acepta los términos.</li><li>Toca <b>Create API key</b> (crear clave). Si te pide proyecto, deja el que te propone.</li><li>Copia la clave (empieza con <b>AQ.</b> o <b>AIza</b>) y pégala aquí. No pide tarjeta.</li></ol>'+
+    '<div class="ghf"><input id="gemkey" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="AQ.… o AIza…" aria-label="Clave de Gemini"><button class="btn pri" type="button" data-gem="save">Guardar clave</button></div>'+
     '<p class="small muted">La clave se queda solo en este equipo. La hoja viaja directo a Google para leerla; en el plan gratis Google puede usar lo que le mandas para mejorar sus modelos.</p></div>';
 }
 function tanAiBox(){
@@ -1066,16 +1066,18 @@ function gemAsk(key,part){
   var i=0;
   function go(){
     var m=GEM_MODELS[i];
-    return fetch("https://generativelanguage.googleapis.com/v1beta/models/"+m+":generateContent",{method:"POST",headers:{"content-type":"application/json","x-goog-api-key":key},body:body,referrerPolicy:"no-referrer",credentials:"omit"})
-    .then(function(r){return r.json().catch(function(){return {};}).then(function(j){
+    /* si un modelo no contesta en 60 s se prueba el siguiente */
+    var ac=typeof AbortController!=="undefined"?new AbortController():null,tmo=ac?setTimeout(function(){ac.abort();},60000):0;
+    return fetch("https://generativelanguage.googleapis.com/v1beta/models/"+m+":generateContent",{method:"POST",headers:{"content-type":"application/json","x-goog-api-key":key},body:body,referrerPolicy:"no-referrer",credentials:"omit",signal:ac?ac.signal:undefined})
+    .then(function(r){clearTimeout(tmo);return r.json().catch(function(){return {};}).then(function(j){
       if(r.ok)return j;
       var st=(j&&j.error&&j.error.status)||"",msg=String((j&&j.error&&j.error.message)||"");
-      if(r.status===404&&i<GEM_MODELS.length-1){i++;return go();}
+      if((r.status===404||r.status>=500)&&i<GEM_MODELS.length-1){i++;return go();}
       if(/API_KEY|API key/i.test(msg)||r.status===401||r.status===403)throw gemErr("Google no aceptó la clave. Revisa que la copiaste completa o crea otra en AI Studio.");
       if(r.status===429||st==="RESOURCE_EXHAUSTED")throw gemErr("Se acabó el cupo gratis por ahora. Espera un minuto y vuelve a intentar.");
       if(r.status===400)throw gemErr("Gemini no pudo abrir ese archivo. Prueba con una foto (JPG o PNG) o el PDF original.");
-      throw gemErr("Gemini no respondió bien ("+r.status+"). Intenta de nuevo en un rato.");
-    });},function(){throw gemErr("No hay conexión con Gemini. Revisa tu internet.");});
+      throw gemErr(r.status>=500?"Gemini está saturado en este momento. Intenta de nuevo en unos minutos.":"Gemini no respondió bien ("+r.status+"). Intenta de nuevo en un rato.");
+    });},function(e){clearTimeout(tmo);if(e&&e.name==="AbortError"){if(i<GEM_MODELS.length-1){i++;return go();}throw gemErr("Gemini tardó demasiado en contestar. Intenta de nuevo en un rato.");}throw gemErr("No hay conexión con Gemini. Revisa tu internet.");});
   }
   return go().then(function(j){
     var c=j&&j.candidates&&j.candidates[0],t=c&&c.content&&c.content.parts?c.content.parts.map(function(p){return p.text||"";}).join(""):"";
@@ -1125,7 +1127,7 @@ function tanScan(f){
 $("pgtan").addEventListener("change",function(e){var t=e.target;if(!t.matches||!t.matches("[data-tscan]"))return;var f=t.files&&t.files[0];t.value="";tanScan(f);});
 /* la caja de la clave va dentro del formulario de la medición, por eso no es un <form> propio: se guarda con el botón o con Enter */
 function gemSaveKey(){var v=($("gemkey").value||"").trim();
-  if(!/^[A-Za-z0-9_\-]{30,80}$/.test(v)){toast("Esa clave no se ve completa");return;}
+  if(!/^[A-Za-z0-9_.\-]{30,120}$/.test(v)){toast("Esa clave no se ve completa");return;}
   gemSetKey(v);GEM.msg="";toast("Clave de Gemini guardada");
   if(view==="ajustes")renderAjustes();else if($("tf"))tanAiPaint();else renderTanita();}
 document.addEventListener("keydown",function(e){if(e.key==="Enter"&&e.target&&e.target.id==="gemkey"){e.preventDefault();gemSaveKey();}});
