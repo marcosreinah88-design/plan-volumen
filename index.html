@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-EEPVPNm2YzYdx24mr6xz+yV0cqSjfjbJDmxBL9sM0rU=' 'sha256-zTy0ZjxcjjGgxbevhZcx78LFMUbIS6A47qPJEONL8a0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://gist.githubusercontent.com; manifest-src 'self'; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-F8FrKyV4KW9P3H9nXFuSG+AM83nxNWGfqfG/M/y9kUo=' 'sha256-zTy0ZjxcjjGgxbevhZcx78LFMUbIS6A47qPJEONL8a0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://gist.githubusercontent.com https://generativelanguage.googleapis.com; manifest-src 'self'; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
@@ -811,6 +811,14 @@ button.pill{appearance:none;background:transparent;cursor:pointer;font-family:va
 details.pgmore summary{cursor:pointer;font-size:.85rem;color:var(--muted)}details.pgmore[open] summary{margin-bottom:6px}
 #pgrec [data-recall]{justify-self:start}
 #v-progreso .card[hidden]{display:none!important}
+/* escanear la Tanita con IA */
+.fpick{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none}
+label.btn{position:relative;cursor:pointer}
+.tai{display:grid;gap:8px;padding:10px 12px;border:1px dashed var(--line);border-radius:12px;background:var(--surface2)}
+.tai .ghs{margin:0}
+.tai-st{display:flex;align-items:center;gap:8px;color:var(--ink)}
+.tai-dot{width:10px;height:10px;border-radius:50%;background:var(--gym);animation:blink 1s infinite}
+.tform input.ai,.tform select.ai{border-color:var(--gym);background:var(--gym-soft)}
 
 </style>
 
@@ -2137,9 +2145,9 @@ function renderTanita(){
   h+='<div class="tgo"><span class="tl">Hacia la meta de 6 meses <small>(punto gris = julio)</small></span>'+
     (c.kg!=null?tanBar("Peso",b.kg,c.kg,TGOAL.kg,true,bwU()):"")+(c.mm!=null?tanBar("Masa muscular",b.mm,c.mm,TGOAL.mm,true,bwU()):"")+(c.gp!=null?tanBar("Grasa",b.gp,c.gp,TGOAL.gp,false,"%"):"")+'</div>';
   h+='<div class="cd-bar tcd"><b class="disp" style="font-size:2.2rem;color:var(--food)">'+Math.max(0,dl)+'</b><p class="small muted">días para la próxima Tanita ('+TANITA.getDate()+' '+MES3[TANITA.getMonth()]+' '+TANITA.getFullYear()+'). Ve en ayunas, sin entrenar antes y a la misma hora que la anterior para poder compararlas.</p></div>';
-  if(!tanForm)h+='<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn ghost sm" data-tadd="1">Agregar medición nueva</button>'+(c.d!==TAN0.d?'<button type="button" class="btn ghost sm" data-tdel="'+c.d+'">Borrar esta medición</button>':'')+'</div>';
+  if(!tanForm)h+='<div style="display:flex;gap:8px;flex-wrap:wrap">'+(PWA?(gemKey()?'<label class="btn pri sm">Escanear hoja con IA<input type="file" class="fpick" accept="image/*,application/pdf" data-tscan></label>':'<button type="button" class="btn pri sm" data-tadd="1">Escanear hoja con IA</button>'):'')+'<button type="button" class="btn ghost sm" data-tadd="1">Agregar medición nueva</button>'+(c.d!==TAN0.d?'<button type="button" class="btn ghost sm" data-tdel="'+c.d+'">Borrar esta medición</button>':'')+'</div>';
   else{var u=bwU();function F(id,l,un,st,ph){return '<label><span>'+l+'</span><input type="number" inputmode="decimal" step="'+st+'" id="'+id+'" placeholder="'+ph+'"><em>'+un+'</em></label>';}
-    h+='<form class="tform" id="tf"><label class="wide"><span>Fecha</span><input type="date" id="t_d" value="'+iso(TODAY)+'" max="'+iso(TODAY)+'"></label>'+
+    h+='<form class="tform" id="tf">'+(PWA?'<div class="wide tai" id="t_ai">'+tanAiBox()+'</div>':'')+'<label class="wide"><span>Fecha</span><input type="date" id="t_d" value="'+iso(TODAY)+'" max="'+iso(TODAY)+'"></label>'+
      F("t_kg","Peso",u,"0.1",bw(c.kg))+F("t_gp","Grasa","%","0.1",c.gp)+F("t_gk","Masa grasa",u,"0.1",bw(c.gk))+F("t_mm","Masa muscular",u,"0.1",bw(c.mm))+F("t_mg","Masa magra",u,"0.1",bw(c.mg))+F("t_vis","Grasa visceral","nivel","1",c.vis)+F("t_bmr","Metabolismo basal","kcal","1",c.bmr)+F("t_tbw","Agua total","%","0.1",c.tbw)+F("t_ecw","ECW/TBW","%","0.1",c.ecw)+F("t_os","Masa ósea",u,"0.1",bw(c.os))+
      '<fieldset class="wide"><legend>Músculo por segmento (opcional)</legend>'+["bd","tr","bi","pd","pi"].map(function(k){return '<label><span>'+SEGN[k]+'</span><select id="t_s_'+k+'"><option value="">—</option>'+[-4,-3,-2,-1,0,1,2,3,4].map(function(v){return '<option value="'+v+'">'+(v>0?"+":"")+v+'</option>';}).join("")+'</select></label>';}).join("")+'</fieldset>'+
      '<label class="wide"><span>Complexión que marca</span><input type="text" id="t_cx" maxlength="40" placeholder="'+(c.cx||"")+'"></label>'+
@@ -2148,7 +2156,7 @@ function renderTanita(){
 }
 $("pgtan").addEventListener("click",function(e){
   var s=e.target.closest("[data-tsel]");if(s){tanSel=+s.dataset.tsel;renderTanita();return;}
-  var a=e.target.closest("[data-tadd]");if(a){tanForm=a.dataset.tadd==="1";renderTanita();if(tanForm){var el=$("t_kg");if(el)el.focus();}return;}
+  var a=e.target.closest("[data-tadd]");if(a){tanForm=a.dataset.tadd==="1";if(!GEM.busy)GEM.msg="";renderTanita();if(tanForm){var el=$("t_kg");if(el)el.focus();}return;}
   var d=e.target.closest("[data-tdel]");if(d){if(d.dataset.arm!=="1"){d.dataset.arm="1";d.textContent="¿Seguro? Toca otra vez";setTimeout(function(){if(d.isConnected){d.dataset.arm="";d.textContent="Borrar esta medición";}},3500);return;}tanSave(d.dataset.tdel,{del:1});tanSel=null;renderTanita();toast("Medición borrada");}
 });
 $("pgtan").addEventListener("submit",function(e){
@@ -2163,8 +2171,121 @@ $("pgtan").addEventListener("submit",function(e){
   var cx=$("t_cx").value.trim();if(cx)x.cx=cx;
   if(!cnt){toast("Llena al menos un valor");return;}
   if(x.kg!=null){var W=JSON.parse(JSON.stringify(getDoc("weights",{e:[]})));if(!W.e.some(function(r){return r[0]===dt;})){W.e.push([dt,x.kg]);W.e.sort(function(a,b){return a[0]<b[0]?-1:1;});sput("weights",W);}}
-  tanSave(dt,x);tanForm=false;tanSel=null;renderProgreso();toast("Medición guardada");
+  tanSave(dt,x);tanForm=false;tanSel=null;GEM.msg="";renderProgreso();toast("Medición guardada");
 });
+/* ===== leer la hoja de la Tanita con IA (Gemini): la clave es de Marcos y vive solo en este equipo (pvmgem:key);
+   la foto o el PDF van directo a Google y nada se guarda hasta que él revisa los números y toca "Guardar medición" ===== */
+var GEM={busy:false,msg:"",ok:false};
+var GEM_MODELS=["gemini-flash-latest","gemini-2.5-flash","gemini-2.0-flash"];
+var GEM_PROMPT="Eres un lector de reportes de composición corporal Tanita (por ejemplo MC-980, MC-780, BC-418). Lee el documento y devuelve SOLO un objeto JSON con estas claves. Usa null cuando el dato no aparezca; no inventes ni estimes nada. Números con punto decimal, sin unidades.\n"+
+ "fecha: fecha de la medición en formato AAAA-MM-DD (o null)\n"+
+ "u: unidad en que vienen las masas en la hoja, \"kg\" o \"lb\"\n"+
+ "kg: peso corporal\ngp: grasa corporal en %\ngk: masa grasa\nmm: masa muscular (muscle mass)\nmg: masa libre de grasa (FFM, fat free mass)\n"+
+ "vis: nivel de grasa visceral\nbmr: metabolismo basal en kcal\ntbw: agua corporal total en % del peso\ntbw_kg: agua corporal total en masa\n"+
+ "ecw: agua extracelular como % del agua total (ECW/TBW)\nos: masa ósea\ncx: tipo de complexión física tal como aparece (texto corto, en español si se puede)\n"+
+ "seg: objeto con la puntuación muscular por segmento (entero de -4 a 4, la gráfica de puntuación o calificación muscular segmental, no la masa en kg), con claves bd (brazo derecho), bi (brazo izquierdo), tr (tronco), pd (pierna derecha), pi (pierna izquierda); null si no aparece.\n"+
+ "Si la hoja trae varias mediciones, usa la más reciente.";
+function gemKey(){try{return localStorage.getItem("pvmgem:key")||"";}catch(e){return "";}}
+function gemSetKey(v){try{if(v)localStorage.setItem("pvmgem:key",v);else localStorage.removeItem("pvmgem:key");}catch(e){}}
+function gemKeyCard(inForm){
+  return '<div class="ghs gfirst"><p class="small muted">'+(inForm?'Para que la IA lea tu hoja necesita una clave gratis de Google Gemini. Se pega una sola vez en cada equipo:':'Con una clave gratis de Google Gemini, la app lee la foto o el PDF de tu Tanita y llena la medición sola. Se pega una sola vez en cada equipo:')+'</p>'+
+    '<ol class="small"><li>Abre <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> con tu cuenta de Google y acepta los términos.</li><li>Toca <b>Create API key</b> (crear clave). Si te pide proyecto, deja el que te propone.</li><li>Copia la clave (empieza con <b>AIza</b>) y pégala aquí. No pide tarjeta.</li></ol>'+
+    '<div class="ghf"><input id="gemkey" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="AIza…" aria-label="Clave de Gemini"><button class="btn pri" type="button" data-gem="save">Guardar clave</button></div>'+
+    '<p class="small muted">La clave se queda solo en este equipo. La hoja viaja directo a Google para leerla; en el plan gratis Google puede usar lo que le mandas para mejorar sus modelos.</p></div>';
+}
+function tanAiBox(){
+  if(!gemKey())return gemKeyCard(true);
+  if(GEM.busy)return '<p class="small tai-st"><i class="tai-dot"></i>Leyendo tu hoja con Gemini…</p>';
+  return (GEM.msg?'<p class="'+(GEM.ok?'note info':'note')+'">'+GEM.msg+'</p>':'<p class="small muted">Sube la foto o el PDF de tu hoja y la IA llena los campos. Tú revisas y guardas.</p>')+
+    '<div class="gbtns"><label class="btn ghost sm">'+(GEM.msg?'Escanear otra hoja':'Escanear hoja con IA')+'<input type="file" class="fpick" accept="image/*,application/pdf" data-tscan></label></div>';
+}
+function tanAiPaint(){var b=$("t_ai");if(b)b.innerHTML=tanAiBox();}
+function b64OfBlob(f){return new Promise(function(ok,no){var r=new FileReader();r.onload=function(){var s=String(r.result||"");ok(s.slice(s.indexOf(",")+1));};r.onerror=function(){no(r.error);};r.readAsDataURL(f);});}
+/* las fotos se achican a 2000 px (más rápido y gasta menos cupo); un PDF o una foto que el navegador no abre van tal cual */
+function gemPart(f){
+  var mt=(f.type||"").toLowerCase();
+  if(mt==="application/pdf"||/\.pdf$/i.test(f.name||""))return b64OfBlob(f).then(function(d){return {mime_type:"application/pdf",data:d};});
+  return new Promise(function(ok){
+    var u=URL.createObjectURL(f),im=new Image();
+    im.onload=function(){try{var M=2000,k=Math.min(1,M/Math.max(im.naturalWidth,im.naturalHeight)),c=document.createElement("canvas");c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);
+      var g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);var s=c.toDataURL("image/jpeg",0.9);ok({mime_type:"image/jpeg",data:s.slice(s.indexOf(",")+1)});}
+      catch(e){URL.revokeObjectURL(u);ok(null);}};
+    im.onerror=function(){URL.revokeObjectURL(u);ok(null);};
+    im.src=u;
+  }).then(function(p){return p||b64OfBlob(f).then(function(d){return {mime_type:mt||"image/jpeg",data:d};});});
+}
+function gemErr(m){var e=new Error(m);e.user=1;return e;}
+function gemAsk(key,part){
+  var body=JSON.stringify({contents:[{role:"user",parts:[{text:GEM_PROMPT},{inline_data:part}]}],generationConfig:{temperature:0,responseMimeType:"application/json"}});
+  var i=0;
+  function go(){
+    var m=GEM_MODELS[i];
+    return fetch("https://generativelanguage.googleapis.com/v1beta/models/"+m+":generateContent",{method:"POST",headers:{"content-type":"application/json","x-goog-api-key":key},body:body,referrerPolicy:"no-referrer",credentials:"omit"})
+    .then(function(r){return r.json().catch(function(){return {};}).then(function(j){
+      if(r.ok)return j;
+      var st=(j&&j.error&&j.error.status)||"",msg=String((j&&j.error&&j.error.message)||"");
+      if(r.status===404&&i<GEM_MODELS.length-1){i++;return go();}
+      if(/API_KEY|API key/i.test(msg)||r.status===401||r.status===403)throw gemErr("Google no aceptó la clave. Revisa que la copiaste completa o crea otra en AI Studio.");
+      if(r.status===429||st==="RESOURCE_EXHAUSTED")throw gemErr("Se acabó el cupo gratis por ahora. Espera un minuto y vuelve a intentar.");
+      if(r.status===400)throw gemErr("Gemini no pudo abrir ese archivo. Prueba con una foto (JPG o PNG) o el PDF original.");
+      throw gemErr("Gemini no respondió bien ("+r.status+"). Intenta de nuevo en un rato.");
+    });},function(){throw gemErr("No hay conexión con Gemini. Revisa tu internet.");});
+  }
+  return go().then(function(j){
+    var c=j&&j.candidates&&j.candidates[0],t=c&&c.content&&c.content.parts?c.content.parts.map(function(p){return p.text||"";}).join(""):"";
+    t=t.replace(/^\s*```(?:json)?/i,"").replace(/```\s*$/,"").trim();
+    try{return JSON.parse(t);}catch(e){throw gemErr("La IA no pudo leer la hoja. Prueba con una foto más nítida y derecha.");}
+  });
+}
+/* todo lo que contesta la IA se revisa: solo números en rangos posibles, masas pasadas a kg, segmentos enteros de −4 a 4 */
+function gemClean(o){
+  if(!o||typeof o!=="object"||Array.isArray(o))return null;
+  function N(v,lo,hi){v=typeof v==="string"?parseFloat(v.replace(",",".")):v;return typeof v==="number"&&isFinite(v)&&v>=lo&&v<=hi?v:null;}
+  var lb=String(o.u||"").toLowerCase()==="lb",K=function(v){return v==null?null:Math.round((lb?v/LB:v)*100)/100;};
+  var x={kg:K(N(o.kg,30,550)),gp:N(o.gp,2,70),gk:K(N(o.gk,0,300)),mm:K(N(o.mm,10,330)),mg:K(N(o.mg,20,440)),vis:N(o.vis,1,60),bmr:N(o.bmr,600,5000),tbw:N(o.tbw,20,80),ecw:N(o.ecw,20,60),os:K(N(o.os,0.5,20))};
+  if(x.kg!=null&&!(x.kg>=40&&x.kg<=200))x.kg=null;
+  if(x.tbw==null){var tk=K(N(o.tbw_kg,10,330));if(tk!=null&&x.kg)x.tbw=Math.round(tk/x.kg*1000)/10;if(x.tbw!=null&&!(x.tbw>=20&&x.tbw<=80))x.tbw=null;}
+  if(x.vis!=null)x.vis=Math.round(x.vis*2)/2;if(x.bmr!=null)x.bmr=Math.round(x.bmr);
+  var seg={};if(o.seg&&typeof o.seg==="object")Object.keys(SEGN).forEach(function(k){var v=N(o.seg[k],-4,4);if(v!=null)seg[k]=Math.round(v);});x.seg=seg;
+  x.cx=typeof o.cx==="string"?o.cx.replace(/[\u0000-\u001f<>]/g,"").trim().slice(0,40):"";
+  x.d=typeof o.fecha==="string"&&/^\d{4}-\d\d-\d\d$/.test(o.fecha)&&!isNaN(fromIso(o.fecha))&&o.fecha<=iso(TODAY)&&o.fecha>="2020-01-01"?o.fecha:null;
+  return x;
+}
+function tanAiFill(x){
+  var n=0,kgF={kg:1,gk:1,mm:1,mg:1,os:1};
+  document.querySelectorAll("#tf .ai").forEach(function(el){el.classList.remove("ai");});
+  function put(id,v){var el=$(id);if(!el||v==null||v==="")return;el.value=v;el.classList.add("ai");n++;}
+  ["kg","gp","gk","mm","mg","vis","bmr","tbw","ecw","os"].forEach(function(k){var v=x[k];if(v==null)return;put("t_"+k,kgF[k]?Math.round(toU(v)*10)/10:v);});
+  Object.keys(x.seg||{}).forEach(function(k){put("t_s_"+k,String(x.seg[k]));});
+  if(x.cx)put("t_cx",x.cx);
+  if(x.d){var dEl=$("t_d");if(dEl){dEl.value=x.d;dEl.classList.add("ai");}}
+  return n;
+}
+function tanScan(f){
+  if(!f)return;
+  if(f.size>15*1024*1024){toast("El archivo pesa demasiado (máx. 15 MB)");return;}
+  var key=gemKey();if(!key){tanForm=true;renderTanita();return;}
+  if(GEM.busy)return;
+  GEM.busy=true;GEM.msg="";GEM.ok=false;
+  if(!tanForm||!$("tf")){tanForm=true;renderTanita();}else tanAiPaint();
+  gemPart(f).then(function(p){return gemAsk(key,p);}).then(function(o){
+    var x=gemClean(o);GEM.busy=false;
+    var n=x&&$("tf")?tanAiFill(x):0;
+    if(!n){GEM.ok=false;GEM.msg="No encontré datos de Tanita en ese archivo. Prueba con una foto más nítida de la hoja completa.";}
+    else{GEM.ok=true;GEM.msg="Listo: llené "+n+" campos (marcados en azul)."+(x.d?"":" No vi la fecha, revisa que sea la correcta.")+" <b>Revisa cada número contra tu hoja</b> antes de tocar Guardar; la IA puede equivocarse.";}
+    tanAiPaint();
+  }).catch(function(e){GEM.busy=false;GEM.ok=false;GEM.msg=e&&e.user?e.message:"No se pudo leer el archivo. Intenta de nuevo.";tanAiPaint();});
+}
+$("pgtan").addEventListener("change",function(e){var t=e.target;if(!t.matches||!t.matches("[data-tscan]"))return;var f=t.files&&t.files[0];t.value="";tanScan(f);});
+/* la caja de la clave va dentro del formulario de la medición, por eso no es un <form> propio: se guarda con el botón o con Enter */
+function gemSaveKey(){var v=($("gemkey").value||"").trim();
+  if(!/^[A-Za-z0-9_\-]{30,80}$/.test(v)){toast("Esa clave no se ve completa");return;}
+  gemSetKey(v);GEM.msg="";toast("Clave de Gemini guardada");
+  if(view==="ajustes")renderAjustes();else if($("tf"))tanAiPaint();else renderTanita();}
+document.addEventListener("keydown",function(e){if(e.key==="Enter"&&e.target&&e.target.id==="gemkey"){e.preventDefault();gemSaveKey();}});
+document.addEventListener("click",function(e){var b=e.target.closest("[data-gem]");if(!b)return;
+  if(b.dataset.gem==="save"){gemSaveKey();return;}
+  if(b.dataset.gem==="off"){if(b.dataset.arm!=="1"){b.dataset.arm="1";b.textContent="¿Seguro? Toca otra vez";return;}gemSetKey("");toast("Clave borrada de este equipo");renderAjustes();}});
 /* ===== estadística por ejercicio: se arma con las series guardadas en cada día ===== */
 var HIST={loaded:false,loading:false},exMet="top",exStat=null;
 try{exStat=localStorage.getItem("pvm:exstat");exMet=localStorage.getItem("pvm:exmet")||"top";}catch(e){}
@@ -2622,7 +2743,7 @@ function renderGuia(){
 
 /* ================= navegación ================= */
 /* ================= AJUSTES ================= */
-var APPV="2026.11.08-2fd5be";
+var APPV="2026.11.09-7a08bb";
 var AVCAT=[["meal","Comidas","A la hora de cada comida"],["cre","Creatina","Al terminar el entreno (domingo: con el desayuno)"],["gym","Gym","30 minutos antes de entrenar"],["med","Medicamento","15 minutos antes del desayuno"],["peso","Pésate","Lunes, miércoles y viernes, 25 min antes del desayuno"],["cocina","Batch y prep","Domingo 12:00 y miércoles 21:30"]];
 function avCatOn(c){var C=sget("cfg")||{};return !(C.avo&&C.avo[c]===false);}
 function ajRow(h,t,body){return '<div class="card ajc" style="display:grid;gap:10px"><div class="sec-h"><h3 style="font-size:1.05rem">'+h+'</h3>'+(t?'<span class="r eyebrow">'+t+'</span>':'')+'</div>'+body+'</div>';}
@@ -2633,6 +2754,7 @@ function renderAjustes(){
   if(PWA){
     h+=ajRow("Sincronización",ghOn()?"Conectada":"Apagada",ghCard(true));
     h+=ajRow("Avisos",avOn()?"Activos aquí":"",avCard()+'<div class="ghs"><h4>Qué avisos quieres</h4><p class="small muted">Vale para todos tus equipos.</p><div class="avcats">'+AVCAT.map(function(c){var on=avCatOn(c[0]);return '<button type="button" class="avcat" data-avc="'+c[0]+'" aria-pressed="'+on+'"><span class="sw" aria-hidden="true"><i></i></span><span><b>'+c[1]+'</b><small>'+c[2]+'</small></span></button>';}).join("")+'</div></div>');
+    h+=ajRow("IA para la Tanita",gemKey()?"Lista":"",gemKey()?'<p class="small muted">La clave de Gemini está guardada en este equipo. En Progreso → Cuerpo toca <b>Escanear hoja con IA</b> y sube la foto o el PDF de tu Tanita.</p><div class="gbtns"><button class="btn ghost" type="button" data-gem="off">Borrar clave</button></div>':gemKeyCard(false));
     h+='<div class="card" id="pgbk" style="display:grid;gap:10px"></div>';
   }
   h+=ajRow("Unidades y apariencia","",'<div class="ajl"><span><b>Peso corporal</b><small>Las cargas del gym siempre van en lb</small></span>'+seg("data-ajbw",C.bw==="lb"?"lb":"kg",[["kg","kg"],["lb","lb"]])+'</div>'+

@@ -27,6 +27,7 @@ Contexto completo (decisiones, historial, reglas de rutina y dieta): vault de Ob
 - Renombrar un ejercicio conserva su `id` para no partir el historial.
 - Datos que entran pasan por `sanDoc()`; cualquier campo nuevo en documentos debe validarse ahí.
 - Toda conexión externa nueva debe agregarse a la CSP de `build.py`.
+- Escanear Tanita con IA (Progreso → Cuerpo, solo en la PWA y la Mac): manda la foto/PDF a Gemini (`gemini-flash-latest`, con respaldo `gemini-2.5-flash` y `gemini-2.0-flash` si da 404) usando la clave **propia** de Marcos, guardada solo en el equipo (`localStorage` `pvmgem:key`, no se sincroniza). La respuesta pasa por `gemClean()` (rangos, lb→kg, segmentos −4…4) y solo llena el formulario: nada se guarda hasta que él revisa y toca Guardar. La clave se pone o se borra en Ajustes → IA para la Tanita (se saca gratis en aistudio.google.com/apikey).
 - Sincronización: gist secreto cifrado (`plan-volumen-datos.cifrado.json`); no cambiar el formato sin migración.
 - Pesos del gym en lb; peso corporal en kg (cambiable en Ajustes).
 - Textos de la interfaz en español, tono directo, sin mayúsculas forzadas.

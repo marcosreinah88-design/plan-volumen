@@ -788,3 +788,11 @@ button.pill{appearance:none;background:transparent;cursor:pointer;font-family:va
 details.pgmore summary{cursor:pointer;font-size:.85rem;color:var(--muted)}details.pgmore[open] summary{margin-bottom:6px}
 #pgrec [data-recall]{justify-self:start}
 #v-progreso .card[hidden]{display:none!important}
+/* escanear la Tanita con IA */
+.fpick{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none}
+label.btn{position:relative;cursor:pointer}
+.tai{display:grid;gap:8px;padding:10px 12px;border:1px dashed var(--line);border-radius:12px;background:var(--surface2)}
+.tai .ghs{margin:0}
+.tai-st{display:flex;align-items:center;gap:8px;color:var(--ink)}
+.tai-dot{width:10px;height:10px;border-radius:50%;background:var(--gym);animation:blink 1s infinite}
+.tform input.ai,.tform select.ai{border-color:var(--gym);background:var(--gym-soft)}

@@ -48,7 +48,7 @@ hashes=[]
 for m in re.finditer(r'<script(?![^>]*type="application/json")[^>]*>(.*?)</script>',html,re.S):
     hashes.append("'sha256-"+base64.b64encode(hashlib.sha256(m.group(1).encode('utf-8')).digest()).decode()+"'")
 csp=("default-src 'none'; script-src "+" ".join(hashes)+"; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-     "font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://gist.githubusercontent.com; "
+     "font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://gist.githubusercontent.com https://generativelanguage.googleapis.com; "
      "manifest-src 'self'; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'")
 html=html.replace('<meta charset="utf-8">','<meta charset="utf-8">\n<meta http-equiv="Content-Security-Policy" content="'+csp+'">\n<meta name="referrer" content="no-referrer">',1)
 assert html.count('Content-Security-Policy')==1 and len(hashes)==2,len(hashes)
