@@ -293,6 +293,8 @@ function routine9(G){
   G.lun.ex=G.lun.ex.map(function(e){return /^Press francés/.test(e.n)?JSON.parse(JSON.stringify(PD.nov9.pf)):e;});
   /* lunes: aperturas en máquina (pec deck) en vez de polea, pedido el 9 nov; la polea queda como opción si la máquina está ocupada */
   G.lun.ex=G.lun.ex.map(function(e){return /^Aperturas en polea/.test(e.n)?JSON.parse(JSON.stringify(PD.nov9.ap)):e;});
+  /* lunes: elevaciones laterales con mancuernas en vez de polea (no le gustó la polea, 9 nov); mismo ejercicio que jueves, comparte historial */
+  G.lun.ex=G.lun.ex.map(function(e){return /^Elevaciones laterales en polea/.test(e.n)?JSON.parse(JSON.stringify(G.jue.ex.filter(function(x){return /^Elevaciones laterales con mancuernas/.test(x.n);})[0]||e)):e;});
   G.mie.tm="≈80 min · 20 series";G.vie.tm="≈70 min · 16 series";G.sab.tm="≈95 min · 24 series";
   return G;
 }
