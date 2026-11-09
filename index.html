@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-NpCRdd6DuDABfx0PEFC1qn+HSWqc3hCC+C71ELyCuXs=' 'sha256-zTy0ZjxcjjGgxbevhZcx78LFMUbIS6A47qPJEONL8a0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://gist.githubusercontent.com https://generativelanguage.googleapis.com; manifest-src 'self'; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-uOkw5oAIdR8zNqXnWwi46PJ9LluSnFhAWyOMxbTB+CA=' 'sha256-zTy0ZjxcjjGgxbevhZcx78LFMUbIS6A47qPJEONL8a0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://gist.githubusercontent.com https://generativelanguage.googleapis.com; manifest-src 'self'; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <!--pv-app-->
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -1476,13 +1476,19 @@ function setRK(d,k){var dd=dayDoc(d),def=KEYS[d.getDay()];delete dd.gc;if(k===de
 /* gimnasio cerrado ese día (dd.gc): si no hiciste series, el gym no cuenta ni en racha ni en estadísticas; la dieta sí, como el domingo */
 function gymClosed(d){var v=sget(dk(d));if(!v||!v.gc)return false;var s=v.s||{};return !Object.keys(s).some(function(x){return (s[x]||[]).some(rowDone);});}
 function planKey(d){return gymClosed(d)?null:planKey0(d);}
-function planKey0(d){var rk=dayRK(d);if(rk)return rk;var m=modeOf(d),k=KEYS[d.getDay()],done=doneSets(d)>0;
+function planKey0(d){var rk=dayRK(d);if(rk)return rk;var m=modeOf(d),k=KEYS[d.getDay()],done=rawDone(d)>0;
   if(m==="sup")return done?"sup":null;
   if(m==="ocu")return OCU.indexOf(k)>=0?k:(done&&GD[k]?k:null);
   return GD[k]?k:null;}
 function planTotal(d){var k=planKey(d);if(!k)return 0;var cap=capFor(d),t=0;exList(k,d).forEach(function(e){t+=Math.min(nsets(e.sr),cap);});return t;}
 function entTotal(k,d){var cap=capFor(d),t=0;exList(k,d).forEach(function(e){t+=Math.min(nsets(e.sr),cap);});return t;}
-function doneSets(d){var dd=dayDoc(d),n=0;Object.keys(dd.s).forEach(function(x){(dd.s[x]||[]).forEach(function(r){if(r&&r[2])n++;});});return n;}
+/* series hechas de un día: solo las de la rutina que cuenta ese día y hasta el número de series que toca
+   (antes contaba cualquier serie guardada en el día: otra rutina, el ejercicio alterno o series de más) */
+function rawDone(d){var dd=dayDoc(d),n=0;Object.keys(dd.s).forEach(function(x){(dd.s[x]||[]).forEach(function(r){if(r&&r[2])n++;});});return n;}
+function doneSets(d){var k=planKey(d);if(!k)return rawDone(d);var dd=dayDoc(d),cap=capFor(d),n=0;
+  exList(k,d).forEach(function(e){var b=e._base||e,ids=[exId(e)];if(b!==e)ids.push(exId(b));else if(b.alt)ids.push(exId(b.alt));
+    var lim=Math.min(nsets(e.sr),cap);for(var j=0;j<lim;j++){if(ids.some(function(id){return rowDone((dd.s[id]||[])[j]);}))n++;}});
+  return n;}
 /* batido opcional: 1 scoop (≈30 g) en agua = 3 equivalentes de AOA muy bajo en grasa */
 var BAT={kcal:120,p:21};
 function hm(m){return Math.floor(m/60)+":"+pad(m%60);}
@@ -2750,7 +2756,7 @@ function renderGuia(){
 
 /* ================= navegación ================= */
 /* ================= AJUSTES ================= */
-var APPV="2026.11.09-825fdb";
+var APPV="2026.11.09-374aaf";
 var AVCAT=[["meal","Comidas","A la hora de cada comida"],["cre","Creatina","Al terminar el entreno (domingo: con el desayuno)"],["gym","Gym","30 minutos antes de entrenar"],["med","Medicamento","15 minutos antes del desayuno"],["peso","Pésate","Lunes, miércoles y viernes, 25 min antes del desayuno"],["cocina","Batch y prep","Domingo 12:00 y miércoles 21:30"]];
 function avCatOn(c){var C=sget("cfg")||{};return !(C.avo&&C.avo[c]===false);}
 function ajRow(h,t,body){return '<div class="card ajc" style="display:grid;gap:10px"><div class="sec-h"><h3 style="font-size:1.05rem">'+h+'</h3>'+(t?'<span class="r eyebrow">'+t+'</span>':'')+'</div>'+body+'</div>';}
