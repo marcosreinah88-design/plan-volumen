@@ -764,7 +764,69 @@ function updWoStats(){
   var s=$("stS"),v=$("stV");if(!s)return;
   s.querySelector("b").textContent=n+"/"+tot;s.classList.toggle("ok",n>=tot);
   v.querySelector("b").textContent=fmt.format(Math.round(vol));
-  $("wofoot").innerHTML=n>=tot?'<div class="wo-done"><b>Entreno completo</b><p class="small muted">'+tot+' series y '+fmt.format(Math.round(vol))+' lb movidas. Toca tu cena de post-entreno.</p></div>':'';
+  $("wofoot").innerHTML=n>=tot?'<div class="wo-done"><b>Entreno completo</b><p class="small muted">'+tot+' series y '+fmt.format(Math.round(vol))+' lb movidas. Toca tu cena de post-entreno.</p></div>'+cmpHTML(k,woDate()):'';
+}
+/* ===== al completar la rutina: comparación con la misma sesión de la semana pasada y análisis por reglas (sin internet) ===== */
+function dayKeyOf(d){var rk=dayRK(d);if(rk)return rk;return modeOf(d)==="sup"?"sup":KEYS[d.getDay()];}
+function sessSum(rows,n){
+  var S=(rows||[]).slice(0,n).filter(function(r){return r&&r[2]&&+r[1]>0;}).map(function(r){return [+r[0]||0,+r[1]||0];});if(!S.length)return null;
+  var w=Math.max.apply(null,S.map(function(x){return x[0];})),T=S.filter(function(x){return x[0]===w;});
+  return {s:S,w:w,rt:T.reduce(function(a,x){return a+x[1];},0),nt:T.length,minR:Math.min.apply(null,T.map(function(x){return x[1];})),reps:S.reduce(function(a,x){return a+x[1];},0),vol:S.reduce(function(a,x){return a+x[0]*x[1];},0)};}
+function prevSession(k,d,ids){var D=collectDays();
+  for(var i=1;i<=42;i++){var p=addD(d,-i),v=D[iso(p)];if(!v||!v.s||gymClosed(p)||dayKeyOf(p)!==k)continue;
+    if(ids.some(function(id){return (v.s[id]||[]).some(rowDone);}))return {d:p,doc:v,ago:i};}
+  return null;}
+function cmpData(k,d){
+  var L=exList(k,d),ids=L.map(exId),P=prevSession(k,d,ids);if(!P)return null;var dd=dayDoc(d),bi=blockInfo(d),deload=!bi.pre&&bi.wk===5;
+  var X=L.map(function(e){var id=exId(e),n=setsN(e,d),c=sessSum(dd.s[id],n),p=sessSum(P.doc.s[id],99),rr=repRange(e.sr),o={e:e,n:String(e.n).split(" (")[0].split(",")[0],c:c,p:p,rr:rr};
+    if(!c)return o;if(!p){o.st="new";return o;}
+    var dw=c.w-p.w;
+    if(dw>0){o.st="up";o.tag="+"+kgs(dw)+" lb";}
+    else if(dw<0){o.st=c.vol>p.vol?"mix":"down";o.tag="−"+kgs(-dw)+" lb";}
+    else{var dr=c.rt-p.rt;if(c.nt!==p.nt)dr=c.reps-p.reps;o.st=dr>0?"up":dr<0?"down":"eq";o.tag=dr>0?"+"+dr+" rep":dr<0?"−"+(-dr)+" rep":"igual";}
+    o.top=rr&&c.nt>=Math.min(2,n)&&c.minR>=rr[1];
+    o.fade=c.s.length>=3&&c.nt>=2&&(function(){var T=c.s.filter(function(x){return x[0]===c.w;});return T[T.length-1][1]<=Math.floor(T[0][1]*0.7);})();
+    return o;});
+  var both=X.filter(function(o){return o.c&&o.p;}),cv=0,pv=0,cr=0,pr=0;both.forEach(function(o){cv+=o.c.vol;pv+=o.p.vol;cr+=o.c.reps;pr+=o.p.reps;});
+  var Sc=sess(d),Sp=sess(P.d);
+  return {P:P,X:X,both:both,cv:cv,pv:pv,cr:cr,pr:pr,deload:deload,mc:Sc.st==="off"?0:Math.round(Sc.ms/60000),mp:Sp.st==="off"?0:Math.round(Sp.ms/60000),goal:GMat(d)[k]||0};
+}
+function cmpList(a){a=a.map(function(x){return '<b style="color:var(--fg)">'+esc(x)+'</b>';});return a.length<2?a.join(""):a.slice(0,-1).join(", ")+" y "+a[a.length-1];}
+function cmpHTML(k,d){
+  var x=cmpData(k,d);
+  if(!x)return '<div class="card cmp"><h3>Comparación</h3><p class="small muted">Es la primera vez que registras esta rutina. La semana que viene, al terminar, verás aquí qué mejoraste contra hoy.</p></div>';
+  var pd=x.P.d,lab=x.P.ago===7?'el '+DAYS[pd.getDay()].n.toLowerCase()+' pasado, '+pd.getDate()+' '+MES3[pd.getMonth()]:'tu última sesión igual, '+DAYS[pd.getDay()].n.toLowerCase()+' '+pd.getDate()+' '+MES3[pd.getMonth()];
+  var vp=x.pv?Math.round((x.cv-x.pv)/x.pv*100):0,up=x.both.filter(function(o){return o.st==="up";}),dn=x.both.filter(function(o){return o.st==="down";}),eq=x.both.filter(function(o){return o.st==="eq";}),mx=x.both.filter(function(o){return o.st==="mix";});
+  var h='<div class="card cmp"><div class="sec-h"><h3>Contra la semana pasada</h3><span class="r small muted">'+lab+'</span></div>';
+  h+='<div class="kpis"><div class="stat'+(vp>0?' ok':'')+'"><b>'+(vp>0?'+':vp<0?'−':'')+Math.abs(vp)+'%</b><span>volumen (lb × reps)</span></div><div class="stat'+(x.cr>x.pr?' ok':'')+'"><b>'+(x.cr>x.pr?'+':x.cr<x.pr?'−':'')+Math.abs(x.cr-x.pr)+'</b><span>reps totales</span></div><div class="stat'+(up.length?' ok':'')+'"><b>'+up.length+'<small>/'+x.both.length+'</small></b><span>ejercicios arriba</span></div></div>';
+  h+='<ul class="cmpl">'+x.X.map(function(o){if(!o.c)return '';
+    var a=o.p?kgs(o.p.w)+'×'+o.p.s.filter(function(s){return s[0]===o.p.w;}).map(function(s){return s[1];}).join('/'):'—',b=kgs(o.c.w)+'×'+o.c.s.filter(function(s){return s[0]===o.c.w;}).map(function(s){return s[1];}).join('/');
+    return '<li class="'+(o.st||'new')+'"><span class="nm">'+esc(o.n)+'</span><span class="vs">'+a+' → <b>'+b+'</b></span><span class="tg">'+(o.st==="new"?'nuevo':o.tag)+'</span></li>';}).join("")+'</ul><p class="small muted">Libras × reps de las series con tu peso más alto.</p>';
+  var good=[],bad=[],next=[];
+  if(up.length)good.push('Subiste en '+cmpList(up.map(function(o){return o.n;}))+'.');
+  if(vp>=3)good.push('Moviste '+vp+'% más volumen que la semana pasada.');
+  good.push('Completaste todas las series.');
+  if(x.mc&&x.goal&&x.mc<=x.goal+10)good.push('Terminaste en '+dur(x.mc)+(x.mp?' (la semana pasada '+dur(x.mp)+')':'')+', dentro de la meta.');
+  if(x.deload){bad.push('Es semana de descarga: bajar peso o series es lo que toca, no cuenta como retroceso.');}
+  else{
+    if(dn.length)bad.push('Bajaste en '+cmpList(dn.map(function(o){return o.n+' ('+o.tag+')';}))+'.');
+    if(eq.length)bad.push('Repetiste exactamente lo mismo en '+cmpList(eq.map(function(o){return o.n;}))+'.');
+    if(mx.length)bad.push('En '+cmpList(mx.map(function(o){return o.n;}))+' bajaste peso pero hiciste más reps: está bien si fue por técnica.');
+    if(x.mc&&x.goal&&x.mc>x.goal+15)bad.push('La sesión duró '+dur(x.mc)+', '+dur(x.mc-x.goal)+' más que la meta.');
+  }
+  if(!bad.length)bad.push('Nada en contra hoy.');
+  if(x.deload)next.push('La semana que viene vuelve el bloque: regresa a tus pesos de antes de la descarga.');
+  else{
+    var tp=x.X.filter(function(o){return o.c&&o.top;});if(tp.length)next.push('La próxima sube '+STEP+' lb en '+cmpList(tp.map(function(o){return o.n;}))+': llegaste al tope de reps en todas.');
+    if(dn.length)next.push('En '+cmpList(dn.map(function(o){return o.n;}))+' repite el peso de hoy hasta recuperar las reps. Si bajas dos semanas seguidas, revisa sueño y comida.');
+    var fd=x.X.filter(function(o){return o.c&&o.fade&&o.st!=="up";});if(fd.length)next.push('En '+cmpList(fd.map(function(o){return o.n;}))+' se te caen mucho las reps de la primera a la última serie: descansa el tiempo completo ('+esc(fd[0].e.rest)+').');
+    var eq2=eq.filter(function(o){return !o.top;});if(eq2.length)next.push('En '+cmpList(eq2.map(function(o){return o.n;}))+' busca +1 rep en la primera serie con el mismo peso.');
+    if(x.mc&&x.goal&&x.mc>x.goal+15)next.push('Usa el cronómetro de descanso y no alargues entre series para quedar en ≈'+x.goal+' min.');
+    if(!next.length)next.push('Sigue con lo que te sugiere cada ejercicio: +1 rep hasta el tope del rango y luego +'+STEP+' lb.');
+  }
+  var blk=function(t,c,a){return '<div class="cmpb '+c+'"><span class="eyebrow">'+t+'</span><ul>'+a.map(function(s){return '<li>'+s+'</li>';}).join("")+'</ul></div>';};
+  h+=blk('Qué hiciste bien','g',good)+blk('Qué no salió','w',bad)+blk('Qué mejorar la próxima','n',next.slice(0,4))+'</div>';
+  return h;
 }
 var LB=2.20462;
 function toLb(v){return v===""||v==null?"":Math.round(v*LB*10)/10;}
