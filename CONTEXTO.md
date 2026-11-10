@@ -37,3 +37,4 @@ Contexto completo (decisiones, historial, reglas de rutina y dieta): vault de Ob
 - Sincronización: gist secreto cifrado (`plan-volumen-datos.cifrado.json`); no cambiar el formato sin migración.
 - Pesos del gym en lb; peso corporal en kg (cambiable en Ajustes).
 - Textos de la interfaz en español, tono directo, sin mayúsculas forzadas.
+- Comparación al completar la rutina (Entreno, `cmpHTML()` debajo de "Entreno completo"): busca la última sesión con la misma rutina (`dayKeyOf`, hasta 6 semanas atrás, normalmente 7 días) y compara por ejercicio el peso más alto y sus reps, volumen y reps totales, y la duración. El análisis (qué hiciste bien / qué no salió / qué mejorar) sale de reglas locales, sin internet: tope de reps → +5 lb, bajó → repetir peso, reps que se caen >30 % entre series → descanso completo, igual → +1 rep; en descarga no cuenta como retroceso. No guarda nada.
