@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-QvRlbRr4Kdwvoxpq9zTg4S1KOyJEssPUGyiv1YMBiAU=' 'sha256-zTy0ZjxcjjGgxbevhZcx78LFMUbIS6A47qPJEONL8a0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://gist.githubusercontent.com https://generativelanguage.googleapis.com; manifest-src 'self'; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-7k9A0dwmBj7KzettqUzBJ4Zr4nvOI3UsWzpBoK3PebQ=' 'sha256-zTy0ZjxcjjGgxbevhZcx78LFMUbIS6A47qPJEONL8a0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://gist.githubusercontent.com https://generativelanguage.googleapis.com; manifest-src 'self'; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <!--pv-app-->
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -1926,6 +1926,10 @@ function clock(ms){var t=Math.max(0,Math.floor(ms/1000)),h=Math.floor(t/3600),m=
 function hhmm(ts){var d=new Date(ts);return d.getHours()+":"+pad(d.getMinutes());}
 function sessStart(){var dd=dayDoc(TODAY);if(dd.ss&&!dd.se)return;dd.ss=Date.now();delete dd.se;saveDay(TODAY);sessUI();}
 function sessEnd(){var dd=dayDoc(TODAY);if(!dd.ss||dd.se)return;dd.se=Date.now();dd._auth=Date.now();saveDay(TODAY);sessUI();toast("Sesión terminada: "+dur(Math.round((dd.se-dd.ss)/60000)));}
+/* fin de la rutina: la sesión acaba con la última serie marcada, no cuando tocas el botón */
+function sessEndLast(){var dd=dayDoc(TODAY);if(!dd.ss||dd.se)return;var t=dd.lt&&dd.lt>dd.ss?dd.lt:Date.now();dd.se=Math.max(dd.ss+60000,t);dd._auth=Date.now();saveDay(TODAY);sessUI();toast("Sesión terminada: "+dur(Math.round((dd.se-dd.ss)/60000)));}
+/* repara días terminados cuyo fin quedó en la hora en que tocaste el botón (más de 15 min después de la última serie) */
+function finFix(d){var dd=dayDoc(d);if(dd.fin===1&&dd.ss&&dd.se&&dd.lt&&dd.lt>dd.ss&&dd.se-dd.lt>15*60000){dd.se=Math.max(dd.ss+60000,dd.lt);dd._auth=Date.now();saveDay(d);sessUI();}}
 function sessResume(){var dd=dayDoc(TODAY);if(!dd.se)return;delete dd.se;dd._auth=Date.now();saveDay(TODAY);sessUI();}
 function sessAutoClose(){var dd=dayDoc(TODAY);if(dd.ss&&!dd.se){var lt=dd.lt||dd.ss;if(Date.now()-lt>2*3600000){dd.se=Math.max(dd.ss+60000,lt+5*60000);saveDay(TODAY);}}}
 function blkPill(){
@@ -1970,7 +1974,8 @@ function updWoStats(){
   v.querySelector("b").textContent=fmt.format(Math.round(vol));
   var wd=woDate(),fin=dayDoc(wd).fin===1;
   /* rutina completa: el cronómetro se detiene solo (solo hoy y si sigue corriendo) */
-  if(n>=tot&&!fin&&sameDay(wd,TODAY)&&sess().st==="on")sessEnd();
+  if(n>=tot&&!fin&&sameDay(wd,TODAY)&&sess().st==="on")sessEndLast();
+  if(fin)finFix(wd);
   var fh='';
   if(fin)fh='<div class="wo-done"><b>'+(n>=tot?'Entreno completo':'Rutina terminada')+'</b><p class="small muted">'+n+(n<tot?' de '+tot:'')+' series y '+fmt.format(Math.round(vol))+' lb movidas. Toca tu cena de post-entreno.</p><button class="btn ghost sm" type="button" data-fin="0">Seguir entrenando</button></div>'+cmpHTML(k,wd,n>=tot);
   else if(n>=tot)fh='<button class="wo-done wo-tap" type="button" data-fin="1"><b>Entreno completo</b><p class="small muted">'+tot+' series y '+fmt.format(Math.round(vol))+' lb movidas. Toca tu cena de post-entreno.</p><span class="wo-cta">Toca para ver la comparación</span></button>';
@@ -1980,7 +1985,7 @@ function updWoStats(){
 }
 $("wofoot").addEventListener("click",function(e){var b=e.target.closest("[data-fin]");if(!b)return;var d=woDate(),dd=dayDoc(d),on=b.dataset.fin==="1";
   dd.fin=on?1:0;dd._auth=Date.now();saveDay(d);
-  if(sameDay(d,TODAY)){var S1=sess();if(on&&S1.st==="on")sessEnd();else if(!on&&S1.st==="end")sessResume();}
+  if(on&&sameDay(d,TODAY)&&sess().st==="on")sessEndLast();
   updWoStats();if(on){var f=$("wofoot");if(f.scrollIntoView)f.scrollIntoView({behavior:"smooth",block:"start"});}});
 /* ===== al completar la rutina: comparación con la misma sesión de la semana pasada y análisis por reglas (sin internet) ===== */
 function dayKeyOf(d){var rk=dayRK(d);if(rk)return rk;return modeOf(d)==="sup"?"sup":KEYS[d.getDay()];}
@@ -2972,7 +2977,7 @@ function renderGuia(){
 
 /* ================= navegación ================= */
 /* ================= AJUSTES ================= */
-var APPV="2026.11.10-6b7f0e";
+var APPV="2026.11.10-2d5fdf";
 var AVCAT=[["meal","Comidas","A la hora de cada comida"],["cre","Creatina","Al terminar el entreno (domingo: con el desayuno)"],["gym","Gym","30 minutos antes de entrenar"],["med","Medicamento","15 minutos antes del desayuno"],["peso","Pésate","Lunes, miércoles y viernes, 25 min antes del desayuno"],["cocina","Batch y prep","Domingo 12:00 y miércoles 21:30"]];
 function avCatOn(c){var C=sget("cfg")||{};return !(C.avo&&C.avo[c]===false);}
 function ajRow(h,t,body){return '<div class="card ajc" style="display:grid;gap:10px"><div class="sec-h"><h3 style="font-size:1.05rem">'+h+'</h3>'+(t?'<span class="r eyebrow">'+t+'</span>':'')+'</div>'+body+'</div>';}
