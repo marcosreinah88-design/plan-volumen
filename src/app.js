@@ -106,6 +106,7 @@ function sanDoc(k,v){
     ["m","s","sw"].forEach(function(f){if(o[f]!=null&&!obj(o[f]))delete o[f];});
     if(o.s)Object.keys(o.s).forEach(function(id){if(!Array.isArray(o.s[id]))delete o.s[id];});
     if(o.rod!=null&&!(typeof o.rod==="number"&&o.rod===Math.floor(o.rod)&&o.rod>=0&&o.rod<=10))delete o.rod;
+    if(o.fin!=null&&o.fin!==0&&o.fin!==1)delete o.fin;
   }
   if(k==="weights")o.e=Array.isArray(o.e)?o.e.filter(function(r){return Array.isArray(r)&&typeof r[0]==="string"&&/^\d{4}-\d\d-\d\d$/.test(r[0])&&typeof r[1]==="number"&&r[1]>20&&r[1]<400;}):[];
   if(k==="cfg"&&o.bw!=null&&o.bw!=="kg"&&o.bw!=="lb")delete o.bw;
@@ -167,7 +168,7 @@ function mergeDay(a,b){
   if(!out.ss&&ol.ss){out.ss=ol.ss;if(ol.se)out.se=ol.se;}
   else if(out.ss&&ol.ss&&ol.ss<out.ss)out.ss=ol.ss;
   if(ol.lt&&(!out.lt||ol.lt>out.lt))out.lt=ol.lt;
-  if(!out.med&&ol.med)out.med=ol.med;if(!out.gc&&ol.gc)out.gc=ol.gc;if(out.rod==null&&ol.rod!=null)out.rod=ol.rod;
+  if(!out.med&&ol.med)out.med=ol.med;if(!out.gc&&ol.gc)out.gc=ol.gc;if(out.rod==null&&ol.rod!=null)out.rod=ol.rod;if(out.fin==null&&ol.fin!=null)out.fin=ol.fin;
   out._t=Math.max(a._t||0,b._t||0);
   return out;
 }
@@ -764,9 +765,20 @@ function updWoStats(){
   var s=$("stS"),v=$("stV");if(!s)return;
   s.querySelector("b").textContent=n+"/"+tot;s.classList.toggle("ok",n>=tot);
   v.querySelector("b").textContent=fmt.format(Math.round(vol));
-  $("wofoot").innerHTML=n>=tot?'<div class="wo-done"><b>Entreno completo</b><p class="small muted">'+tot+' series y '+fmt.format(Math.round(vol))+' lb movidas. Toca tu cena de post-entreno.</p></div>'+cmpHTML(k,woDate()):'';
-  var rc=$("woreco");if(rc){var h0=n>=tot?'':recoHTML(k,woDate());rc.hidden=!h0;rc.innerHTML=h0;}
+  var wd=woDate(),fin=dayDoc(wd).fin===1;
+  /* rutina completa: el cronómetro se detiene solo (solo hoy y si sigue corriendo) */
+  if(n>=tot&&!fin&&sameDay(wd,TODAY)&&sess().st==="on")sessEnd();
+  var fh='';
+  if(fin)fh='<div class="wo-done"><b>'+(n>=tot?'Entreno completo':'Rutina terminada')+'</b><p class="small muted">'+n+(n<tot?' de '+tot:'')+' series y '+fmt.format(Math.round(vol))+' lb movidas. Toca tu cena de post-entreno.</p><button class="btn ghost sm" type="button" data-fin="0">Seguir entrenando</button></div>'+cmpHTML(k,wd,n>=tot);
+  else if(n>=tot)fh='<button class="btn pri wo-fin" type="button" data-fin="1">'+ic("check")+'Entreno completo · ver comparación</button>';
+  else if(n>0)fh='<button class="btn ghost wo-fin" type="button" data-fin="1">Terminar la rutina aquí ('+n+' de '+tot+' series)</button>';
+  $("wofoot").innerHTML=fh;
+  var rc=$("woreco");if(rc){var h0=fin?'':recoHTML(k,wd);rc.hidden=!h0;rc.innerHTML=h0;}
 }
+$("wofoot").addEventListener("click",function(e){var b=e.target.closest("[data-fin]");if(!b)return;var d=woDate(),dd=dayDoc(d),on=b.dataset.fin==="1";
+  dd.fin=on?1:0;dd._auth=Date.now();saveDay(d);
+  if(sameDay(d,TODAY)){var S1=sess();if(on&&S1.st==="on")sessEnd();else if(!on&&S1.st==="end")sessResume();}
+  updWoStats();if(on){var f=$("wofoot");if(f.scrollIntoView)f.scrollIntoView({behavior:"smooth",block:"start"});}});
 /* ===== al completar la rutina: comparación con la misma sesión de la semana pasada y análisis por reglas (sin internet) ===== */
 function dayKeyOf(d){var rk=dayRK(d);if(rk)return rk;return modeOf(d)==="sup"?"sup":KEYS[d.getDay()];}
 function sessSum(rows,n){
@@ -812,7 +824,7 @@ function recoHTML(k,d){
   var pd=P.d;
   return '<div class="cmpb n reco"><span class="eyebrow">Recomendaciones de la vez pasada · '+DAYS[pd.getDay()].n.toLowerCase()+' '+pd.getDate()+' '+MES3[pd.getMonth()]+'</span><ul>'+cmpNext(x,true).map(function(t){return '<li>'+t+'</li>';}).join("")+'</ul></div>';}
 function cmpList(a){a=a.map(function(x){return '<b style="color:var(--fg)">'+esc(x)+'</b>';});return a.length<2?a.join(""):a.slice(0,-1).join(", ")+" y "+a[a.length-1];}
-function cmpHTML(k,d){
+function cmpHTML(k,d,all){
   var x=cmpData(k,d);
   if(!x)return '<div class="card cmp"><h3>Comparación</h3><p class="small muted">Es la primera vez que registras esta rutina. La semana que viene, al terminar, verás aquí qué mejoraste contra hoy.</p></div>';
   var pd=x.P.d,lab=x.P.ago===7?'el '+DAYS[pd.getDay()].n.toLowerCase()+' pasado, '+pd.getDate()+' '+MES3[pd.getMonth()]:'tu última sesión igual, '+DAYS[pd.getDay()].n.toLowerCase()+' '+pd.getDate()+' '+MES3[pd.getMonth()];
@@ -822,10 +834,10 @@ function cmpHTML(k,d){
   h+='<ul class="cmpl">'+x.X.map(function(o){if(!o.c)return '';
     var a=o.p?kgs(o.p.w)+'×'+o.p.s.filter(function(s){return s[0]===o.p.w;}).map(function(s){return s[1];}).join('/'):'—',b=kgs(o.c.w)+'×'+o.c.s.filter(function(s){return s[0]===o.c.w;}).map(function(s){return s[1];}).join('/');
     return '<li class="'+(o.st||'new')+'"><span class="nm">'+esc(o.n)+'</span><span class="vs">'+a+' → <b>'+b+'</b></span><span class="tg">'+(o.st==="new"?'nuevo':o.tag)+'</span></li>';}).join("")+'</ul><p class="small muted">Libras × reps de las series con tu peso más alto.</p>';
-  var good=[],bad=[],next=cmpNext(x,false);
+  var good=[],bad=[],next=cmpNext(x,false);if(!all)bad.push('Terminaste la rutina a medias. Si fue por tiempo, la próxima elige el modo Ocupada.');
   if(up.length)good.push('Subiste en '+cmpList(up.map(function(o){return o.n;}))+'.');
   if(vp>=3)good.push('Moviste '+vp+'% más volumen que la semana pasada.');
-  good.push('Completaste todas las series.');
+  if(all)good.push('Completaste todas las series.');
   if(x.mc&&x.goal&&x.mc<=x.goal+10)good.push('Terminaste en '+dur(x.mc)+(x.mp?' (la semana pasada '+dur(x.mp)+')':'')+', dentro de la meta.');
   if(x.deload){bad.push('Es semana de descarga: bajar peso o series es lo que toca, no cuenta como retroceso.');}
   else{
