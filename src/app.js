@@ -770,7 +770,7 @@ function updWoStats(){
   if(n>=tot&&!fin&&sameDay(wd,TODAY)&&sess().st==="on")sessEnd();
   var fh='';
   if(fin)fh='<div class="wo-done"><b>'+(n>=tot?'Entreno completo':'Rutina terminada')+'</b><p class="small muted">'+n+(n<tot?' de '+tot:'')+' series y '+fmt.format(Math.round(vol))+' lb movidas. Toca tu cena de post-entreno.</p><button class="btn ghost sm" type="button" data-fin="0">Seguir entrenando</button></div>'+cmpHTML(k,wd,n>=tot);
-  else if(n>=tot)fh='<button class="btn pri wo-fin" type="button" data-fin="1">'+ic("check")+'Entreno completo · ver comparación</button>';
+  else if(n>=tot)fh='<button class="wo-done wo-tap" type="button" data-fin="1"><b>Entreno completo</b><p class="small muted">'+tot+' series y '+fmt.format(Math.round(vol))+' lb movidas. Toca tu cena de post-entreno.</p><span class="wo-cta">Toca para ver la comparación</span></button>';
   else if(n>0)fh='<button class="btn ghost wo-fin" type="button" data-fin="1">Terminar la rutina aquí ('+n+' de '+tot+' series)</button>';
   $("wofoot").innerHTML=fh;
   var rc=$("woreco");if(rc){var h0=fin?'':recoHTML(k,wd);rc.hidden=!h0;rc.innerHTML=h0;}
