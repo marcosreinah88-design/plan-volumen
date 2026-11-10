@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-RzFzFynGNpYvSCQqnsO19OlQSA0P4jM75GSWu7EdzJs=' 'sha256-zTy0ZjxcjjGgxbevhZcx78LFMUbIS6A47qPJEONL8a0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://gist.githubusercontent.com https://generativelanguage.googleapis.com; manifest-src 'self'; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-QvRlbRr4Kdwvoxpq9zTg4S1KOyJEssPUGyiv1YMBiAU=' 'sha256-zTy0ZjxcjjGgxbevhZcx78LFMUbIS6A47qPJEONL8a0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://gist.githubusercontent.com https://generativelanguage.googleapis.com; manifest-src 'self'; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <!--pv-app-->
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -452,6 +452,8 @@ td small{color:var(--muted);font-size:.8rem}
 .toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 64px);transform:translateX(-50%) translateY(-20px);opacity:0;z-index:45;background:var(--fg);color:var(--bg);font-weight:600;font-size:.86rem;padding:9px 14px;border-radius:999px;box-shadow:var(--shadow);transition:opacity .25s,transform .25s;pointer-events:none;max-width:calc(100% - 32px);text-align:center}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 .wo-done{display:grid;gap:6px;justify-items:center;text-align:center;padding:18px;border-radius:18px;border:1px solid color-mix(in srgb,var(--ok) 50%,var(--line));background:var(--ok-soft)}
+.wo-tap{width:100%;font:inherit;color:inherit;cursor:pointer}
+.wo-tap .wo-cta{font-weight:700;font-size:.9rem;color:var(--ok)}
 .wo-fin{width:100%;justify-content:center;min-height:52px}
 .cmp{display:grid;gap:12px;margin-top:12px;text-align:left}
 .cmp h3{font-size:1.05rem}
@@ -1971,7 +1973,7 @@ function updWoStats(){
   if(n>=tot&&!fin&&sameDay(wd,TODAY)&&sess().st==="on")sessEnd();
   var fh='';
   if(fin)fh='<div class="wo-done"><b>'+(n>=tot?'Entreno completo':'Rutina terminada')+'</b><p class="small muted">'+n+(n<tot?' de '+tot:'')+' series y '+fmt.format(Math.round(vol))+' lb movidas. Toca tu cena de post-entreno.</p><button class="btn ghost sm" type="button" data-fin="0">Seguir entrenando</button></div>'+cmpHTML(k,wd,n>=tot);
-  else if(n>=tot)fh='<button class="btn pri wo-fin" type="button" data-fin="1">'+ic("check")+'Entreno completo · ver comparación</button>';
+  else if(n>=tot)fh='<button class="wo-done wo-tap" type="button" data-fin="1"><b>Entreno completo</b><p class="small muted">'+tot+' series y '+fmt.format(Math.round(vol))+' lb movidas. Toca tu cena de post-entreno.</p><span class="wo-cta">Toca para ver la comparación</span></button>';
   else if(n>0)fh='<button class="btn ghost wo-fin" type="button" data-fin="1">Terminar la rutina aquí ('+n+' de '+tot+' series)</button>';
   $("wofoot").innerHTML=fh;
   var rc=$("woreco");if(rc){var h0=fin?'':recoHTML(k,wd);rc.hidden=!h0;rc.innerHTML=h0;}
@@ -2970,7 +2972,7 @@ function renderGuia(){
 
 /* ================= navegación ================= */
 /* ================= AJUSTES ================= */
-var APPV="2026.11.10-6f1c84";
+var APPV="2026.11.10-6b7f0e";
 var AVCAT=[["meal","Comidas","A la hora de cada comida"],["cre","Creatina","Al terminar el entreno (domingo: con el desayuno)"],["gym","Gym","30 minutos antes de entrenar"],["med","Medicamento","15 minutos antes del desayuno"],["peso","Pésate","Lunes, miércoles y viernes, 25 min antes del desayuno"],["cocina","Batch y prep","Domingo 12:00 y miércoles 21:30"]];
 function avCatOn(c){var C=sget("cfg")||{};return !(C.avo&&C.avo[c]===false);}
 function ajRow(h,t,body){return '<div class="card ajc" style="display:grid;gap:10px"><div class="sec-h"><h3 style="font-size:1.05rem">'+h+'</h3>'+(t?'<span class="r eyebrow">'+t+'</span>':'')+'</div>'+body+'</div>';}
