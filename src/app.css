@@ -808,3 +808,18 @@ label.btn{position:relative;cursor:pointer}
 .tn-l .tn-h{font-weight:600}
 .tn-l .risk{border-color:var(--warn);background:var(--warn-soft)}
 .tsel .hasn::after{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--gym);margin-left:5px;vertical-align:middle}
+
+/* peso sugerido, rodilla y resumen de la semana */
+.ex-sug{font-size:.8rem;color:var(--muted);line-height:1.4;border-left:3px solid var(--line2);padding-left:8px}
+.ex-sug b{color:var(--fg);font-family:var(--mono);font-weight:600}
+.ex-sug.up{border-left-color:var(--ok);color:var(--fg)}
+.ex-sug.up b{color:var(--ok)}
+.rod{display:grid;gap:10px}
+.rodb{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.rodb button{min-height:40px;border-radius:10px;border:1px solid var(--line2);background:var(--surface2);color:var(--fg);font:inherit;font-family:var(--mono);font-size:.95rem;cursor:pointer}
+.rodb button[aria-pressed="true"].g{background:var(--ok);border-color:var(--ok);color:#fff}
+.rodb button[aria-pressed="true"].w{background:var(--warn);border-color:var(--warn);color:#fff}
+.rodb button[aria-pressed="true"].r{background:var(--d-lun);border-color:var(--d-lun);color:#fff}
+.wsum{display:grid;gap:10px;margin:0 0 4px}
+.wsum .stat b small{font-size:.9rem;color:var(--muted)}
+.wsum p{margin:0}

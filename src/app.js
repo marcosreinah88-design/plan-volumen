@@ -9,8 +9,8 @@ var IMG=PD.img, GD=PD.days, FR=PD.frag;
 /* ================= constantes del plan ================= */
 var KEYS=["dom","lun","mar","mie","jue","vie","sab"];
 var GK=["lun","mar","mie","jue","vie","sab"];
-var SHORT={lun:"Empuje",mar:"Tirón",mie:"Pierna A",jue:"Brazos",vie:"Torso",sab:"Pierna B",dom:"Batch"};
-var WSHORT={lun:"Empuje",mar:"Tirón",mie:"Pierna",jue:"Brazos",vie:"Torso",sab:"Pierna",dom:"Batch"};
+var SHORT={lun:"Empuje",mar:"Pull day",mie:"Pierna A",jue:"Brazos",vie:"Torso",sab:"Pierna B",dom:"Batch"};
+var WSHORT={lun:"Empuje",mar:"Pull day",mie:"Pierna",jue:"Brazos",vie:"Torso",sab:"Pierna",dom:"Batch"};
 var GYMT={lun:"11:45",mar:"10:15",mie:"11:45",jue:"10:15",vie:"15:00",sab:"10:00"};
 var GMIN={lun:80,mar:85,mie:75,jue:90,vie:80,sab:80};
 var CLS={lun:[["7:00","8:15","Otorrino"],["8:30","10:15","Cirugía"],["19:00","20:15","Gastroenterología"]],
@@ -105,6 +105,7 @@ function sanDoc(k,v){
     if(o.rk!=null&&!(typeof o.rk==="string"&&(o.rk==="sup"||(GD&&Object.prototype.hasOwnProperty.call(GD,o.rk)))))delete o.rk;
     ["m","s","sw"].forEach(function(f){if(o[f]!=null&&!obj(o[f]))delete o[f];});
     if(o.s)Object.keys(o.s).forEach(function(id){if(!Array.isArray(o.s[id]))delete o.s[id];});
+    if(o.rod!=null&&!(typeof o.rod==="number"&&o.rod===Math.floor(o.rod)&&o.rod>=0&&o.rod<=10))delete o.rod;
   }
   if(k==="weights")o.e=Array.isArray(o.e)?o.e.filter(function(r){return Array.isArray(r)&&typeof r[0]==="string"&&/^\d{4}-\d\d-\d\d$/.test(r[0])&&typeof r[1]==="number"&&r[1]>20&&r[1]<400;}):[];
   if(k==="cfg"&&o.bw!=null&&o.bw!=="kg"&&o.bw!=="lb")delete o.bw;
@@ -166,7 +167,7 @@ function mergeDay(a,b){
   if(!out.ss&&ol.ss){out.ss=ol.ss;if(ol.se)out.se=ol.se;}
   else if(out.ss&&ol.ss&&ol.ss<out.ss)out.ss=ol.ss;
   if(ol.lt&&(!out.lt||ol.lt>out.lt))out.lt=ol.lt;
-  if(!out.med&&ol.med)out.med=ol.med;if(!out.gc&&ol.gc)out.gc=ol.gc;
+  if(!out.med&&ol.med)out.med=ol.med;if(!out.gc&&ol.gc)out.gc=ol.gc;if(out.rod==null&&ol.rod!=null)out.rod=ol.rod;
   out._t=Math.max(a._t||0,b._t||0);
   return out;
 }
@@ -576,7 +577,33 @@ function renderHabits(){
     '<p class="small muted">Meta: 3,000 ml. En días de pierna, 300 a 700 ml más.</p>';
   $("habits").innerHTML=hb;
 }
-function renderHoy(){renderHero();renderWeek();renderMed();renderWq();renderNext();renderTimeline();renderHabits();}
+/* ===== resumen de la semana: domingo (esta semana) y lunes (la que acaba de pasar) ===== */
+function wsumData(mon){
+  var sun=addD(mon,6),end=ddiff(sun,TODAY)>0?TODAY:sun,c=dcount(mon,end),wm=modeOf(mon),goal=wm==="full"?6:wm==="ocu"?4:2;
+  var W=getDoc("weights",{e:[]}).e,wa=function(a,b){return avg(W.filter(function(r){var d=fromIso(r[0]);return ddiff(d,a)>=0&&ddiff(d,b)<=0;}).map(function(r){return r[1];}));};
+  var a=wa(mon,sun),p=wa(addD(mon,-7),addD(mon,-1));
+  var D=collectDays(),from=iso(mon),to=iso(sun),names={},up=[];
+  [GDat(mon),GDat(sun)].forEach(function(G){allEx(G).forEach(function(x){names[x.id]=x.n;});});
+  Object.keys(names).forEach(function(id){var H=exHistory(id,D),wk=H.filter(function(h){return h.d>=from&&h.d<=to;}),pre=H.filter(function(h){return h.d<from;});
+    if(!wk.length||!pre.length)return;var b=wk.reduce(function(x,y){return (y.top[0]>x.top[0]||(y.top[0]===x.top[0]&&y.top[1]>x.top[1]))?y:x;}),q=pre[pre.length-1];
+    if(b.top[0]>q.top[0])up.push([names[id],"+"+kgs(b.top[0]-q.top[0])+" lb"]);else if(b.top[0]===q.top[0]&&b.top[1]>q.top[1])up.push([names[id],"+"+(b.top[1]-q.top[1])+" rep"]);});
+  var rod=Object.keys(D).filter(function(dt){return dt>=from&&dt<=to&&typeof D[dt].rod==="number";}).sort().map(function(dt){return D[dt].rod;});
+  return {c:c,goal:goal,wm:wm,a:a,p:p,up:up,rod:rod,mon:mon,sun:sun};
+}
+function renderWsum(){var el=$("wsum");if(!el)return;var dw=TODAY.getDay();
+  if(!sameDay(selDay,TODAY)||(dw!==0&&dw!==1)){el.hidden=true;el.innerHTML="";return;}
+  var mon=dw===0?mondayOf(TODAY):addD(mondayOf(TODAY),-7);if(ddiff(mon,START)<0){el.hidden=true;return;}
+  var x=wsumData(mon),won=x.c.g>=x.goal,dw0=x.c.fp?x.c.f+'/'+x.c.fp:'—',wd=x.a!=null&&x.p!=null?x.a-x.p:null;
+  var wtx=wd==null?(x.a!=null?bw(x.a)+' '+bwU():'—'):(wd>=0?'+':'')+fmt1.format(Math.round(toU(wd)*10)/10)+' '+bwU();
+  var h='<div class="sec-h"><h3 style="font-size:1.05rem">'+(dw===0?'Tu semana':'La semana pasada')+'</h3><span class="r eyebrow">'+x.mon.getDate()+'–'+x.sun.getDate()+' '+MES3[x.sun.getMonth()]+' · '+MODES[x.wm].n.toLowerCase()+'</span></div>';
+  h+='<div class="kpis"><div class="stat'+(won?' ok':'')+'"><b>'+x.c.g+'<small>/'+x.goal+'</small></b><span>sesiones</span></div><div class="stat'+(x.c.fp&&x.c.f*10>=x.c.fp*8?' ok':'')+'"><b>'+dw0+'</b><span>días de dieta</span></div><div class="stat'+(wd!=null&&wd>=0.1&&wd<=0.4?' ok':'')+'"><b>'+wtx+'</b><span>'+(wd==null?'promedio de peso':'peso vs semana anterior')+'</span></div></div>';
+  h+='<p class="small">'+(won?'<b>Semana ganada.</b> Cumpliste el modo que elegiste.':'Te faltaron '+(x.goal-x.c.g)+' de '+x.goal+' sesiones. Lo faltado no se repone: la regla es no faltar dos veces seguidas.')+'</p>';
+  if(x.up.length)h+='<p class="small muted">Subiste en '+x.up.length+': '+x.up.slice(0,6).map(function(u){return '<b style="color:var(--fg)">'+esc(u[0].split(" (")[0])+'</b> '+u[1];}).join(' · ')+(x.up.length>6?' y '+(x.up.length-6)+' más':'')+'</p>';
+  else h+='<p class="small muted">Esta semana no subiste peso ni reps. En Entreno, cada ejercicio te dice qué toca hoy.</p>';
+  if(x.rod.length)h+='<p class="small muted">Rodilla: '+x.rod.join(' · ')+(Math.max.apply(null,x.rod)<=1?' (sin molestias)':'')+'</p>';
+  if(dw===0)h+='<p class="small muted">Antes del batch: elige en Entreno el modo de la semana que viene.</p>';
+  el.hidden=false;el.className="card wsum";el.innerHTML=h;}
+function renderHoy(){renderHero();renderWeek();renderMed();renderWq();renderWsum();renderNext();renderTimeline();renderHabits();}
 
 $("week").addEventListener("click",function(e){var b=e.target.closest(".wd");if(!b)return;selDay=fromIso(b.dataset.d);wfor=null;renderHoy();});
 $("tl").addEventListener("click",function(e){
@@ -622,6 +649,27 @@ function nextTest(){for(var d=day0(TODAY),i=0;i<120;i++,d=addD(d,1)){var bi=bloc
 function noteTx(n){if(n.indexOf("{prueba}")<0)return n;var t=nextTest(),x=!t?"":sameDay(t,TODAY)?"hoy toca":blockInfo(TODAY).wk===4&&ddiff(t,TODAY)<7?"este viernes "+t.getDate()+" "+MES3[t.getMonth()]:"la próxima: viernes "+t.getDate()+" "+MES3[t.getMonth()];return n.replace("{prueba}",x);}
 function bwH(e){if(!e.bwx)return "";var w=lastWeight();return '<p class="ex-note">'+(w?'Tu último peso: <b>'+bw(w)+' '+bwU()+'</b>. Anota ese número menos la ayuda.':'Pésate en ayunas (lunes, miércoles y viernes) y aquí verás tu número para restarle la ayuda.')+'</p>';}
 function altH(e){var b=e._base||e;if(!b.alt)return "";var on=e!==b,o=on?b:b.alt;return '<p class="ex-alt">'+esc(on?b.alt.altl:b.altl)+' <button type="button" class="lnk" data-alt="'+exId(b)+'">Cambiar a '+esc(o.n.split(" (")[0].toLowerCase())+'</button></p>';}
+/* ===== peso sugerido: doble progresión. Si la vez pasada llegaste al tope de reps en todas las series con tu peso más alto, hoy +5 lb; si no, mismo peso y +1 rep ===== */
+var STEP=5;
+function repRange(sr){var m=String(sr).match(/(\d+)\s*[–-]\s*(\d+)/);return m?[+m[1],+m[2]]:null;}
+function sugFor(e,last,n){
+  if(!last||!last.s)return null;var rr=repRange(e.sr);if(!rr)return null;
+  var S=last.s.filter(function(x){return +x[0]>0&&+x[1]>0;});if(!S.length)return null;
+  var top=Math.max.apply(null,S.map(function(x){return +x[0];})),T=S.filter(function(x){return +x[0]===top;}),minR=Math.min.apply(null,T.map(function(x){return +x[1];}));
+  var bi=blockInfo(woDate());
+  if(!bi.pre&&bi.wk===5)return {k:"eq",w:top,t:'Descarga: <b>'+kgs(top)+' lb</b>, mitad de series y lejos del fallo.'};
+  if(T.length>=Math.min(2,n)&&minR>=rr[1])return {k:"up",w:top+STEP,r:rr[0],t:'Hoy: <b>'+kgs(top+STEP)+' lb</b> × '+rr[0]+'+ reps'+(e.bwx?' (5 lb menos de ayuda)':'')+'. La vez pasada llegaste a '+rr[1]+' en todas.'};
+  if(minR<rr[0])return {k:"eq",w:top,t:'Hoy: <b>'+kgs(top)+' lb</b> otra vez, hasta sacar '+rr[0]+' reps en todas. Si vuelves a quedar corto, baja '+STEP+' lb.'};
+  return {k:"eq",w:top,t:'Hoy: <b>'+kgs(top)+' lb</b> y busca +1 rep. Cuando llegues a '+rr[1]+' en todas, subes '+STEP+' lb.'};
+}
+/* ===== rodilla: dolor 0–10 al terminar pierna (dd.rod); avisa cuando llevas 2+ semanas sin molestias ===== */
+var LEGK={mie:1,sab:1};
+function rodList(){var D=collectDays(),out=[];Object.keys(D).sort().forEach(function(dt){var v=D[dt].rod;if(typeof v==="number")out.push([dt,v]);});return out;}
+function rodReady(){var L=rodList(),run=[];for(var i=L.length-1;i>=0&&L[i][1]<=1;i--)run.push(L[i]);if(run.length<4)return null;var dd=ddiff(TODAY,fromIso(run[run.length-1][0]));return dd>=14?{n:run.length,w:Math.floor(dd/7)}:null;}
+function rodMsg(v){return v==null?'Al terminar pierna, toca cuánto te molestó la rodilla. 0 es nada.':v<=1?'Sin molestias. Cuando lleves 2 semanas así, te aviso para lo de la sentadilla.':v<=3?'Molestia leve: repite peso y rango la próxima, sin subir.':'Dolió: la próxima baja peso o rango, y si sigue, coméntalo con tu fisio.';}
+function rodCard(){var d=woDate(),v=dayDoc(d).rod,L=rodList().filter(function(x){return x[0]!==iso(d);}).slice(-5);
+  var b='';for(var i=0;i<=10;i++)b+='<button type="button" data-rod="'+i+'" aria-pressed="'+(v===i)+'" class="'+(i<=1?'g':i<=3?'w':'r')+'">'+i+'</button>';
+  return '<article class="card rod"><div class="sec-h"><h3 style="font-size:1rem">¿Cómo quedó la rodilla?</h3><span class="r small muted">0 nada · 10 mucho</span></div><div class="rodb" role="group" aria-label="Dolor de rodilla de 0 a 10">'+b+'</div><p class="small muted">'+rodMsg(v)+'</p>'+(L.length?'<p class="small muted">Antes: '+L.map(function(x){return fmtD(x[0])+' <b style="color:var(--fg)">'+x[1]+'</b>';}).join(' · ')+'</p>':'')+'</article>';}
 function renderEntreno(){
   applyAlt();var k=wsel,g=WG()[k],bi=blockInfo(TODAY),todayK=dayRK(TODAY)||KEYS[TODAY.getDay()];
   var wm=modeOf(TODAY);
@@ -637,6 +685,7 @@ function renderEntreno(){
     if(ddiff(cd,TODAY)<0)notes=(wtoday?'<p class="note info">Lo que anotes se guarda <b>hoy</b>. <a href="#" data-wtoday="0">Guardarlo el '+DAYS[cd.getDay()].n.toLowerCase()+' '+cd.getDate()+'</a></p>':'<p class="note info">Lo que anotes se guarda el <b>'+DAYS[cd.getDay()].n.toLowerCase()+' '+cd.getDate()+' '+MES3[cd.getMonth()]+'</b> y sale en ese día en Hoy. <a href="#" data-wtoday="1">¿Lo hiciste hoy?</a></p>')+notes;
     else notes='<p class="note info">Hoy toca <b>'+GD[todayK].t+'</b>. Si entrenas esta rutina hoy, se guarda con la fecha de hoy.</p>'+notes;}
   if(gymClosed(woDate()))notes='<p class="note info"><b>Marcaste el gimnasio cerrado este día.</b> Si entrenas en otro lado, anota tus series y el día cuenta normal.</p>'+notes;
+  if(LEGK[k]){var rr0=rodReady();if(rr0)notes+='<p class="note info"><b>Rodilla: '+rr0.w+' semanas sin molestias.</b> Pregúntale a tu fisio por la sentadilla en Smith o hack hasta 90°.</p>';}
   if(wm==="ocu")notes='<p class="note info"><b>Semana ocupada:</b> 2 series por ejercicio; jueves y sábado descansas sin culpa.</p>'+notes;
   if(!bi.pre&&bi.wk===5)notes='<p class="note"><b>Semana de descarga:</b> haz la mitad de las series de cada ejercicio con el mismo peso y RIR 3 o más.</p>'+notes;
   var modeH='<div class="wmode"><span class="eyebrow">Modo de esta semana</span><div class="seg" role="group" aria-label="Modo de la semana">'+["full","ocu","sup"].map(function(m){return '<button type="button" data-wmode="'+m+'" aria-pressed="'+(m===wm)+'">'+MODES[m].n+'</button>';}).join("")+'</div><p class="small muted">'+MODES[wm].d+'</p></div>';
@@ -644,10 +693,10 @@ function renderEntreno(){
     '<div class="stats"><div class="stat" id="stS"><b></b><span>series hechas</span></div><div class="stat" id="stV"><b></b><span>lb movidas hoy</span></div><div class="stat"><b>'+(bi.pre?'—':RIRW[bi.wk][0])+'</b><span>'+(bi.pre?'el bloque empieza el 2 nov':'Sem '+(bi.wk+1)+': '+RIRW[bi.wk][1].toLowerCase())+'</span></div></div><div class="sess" id="sess"></div>'+notes+'</div>';
   var dd=dayDoc(woDate());
   $("exlist").innerHTML=g.ex.map(function(e,i){
-    var id=exId(e),n=setsN(e),rows=dd.s[id]||[],last=lastFor(id),reps=(e.sr.split("×")[1]||"").trim(),done=0;
+    var id=exId(e),n=setsN(e),rows=dd.s[id]||[],last=lastFor(id),reps=(e.sr.split("×")[1]||"").trim(),done=0,sug=sugFor(e,last,n);
     var setsH="";
     for(var j=0;j<n;j++){
-      var r=rows[j]||[],ok=!!r[2],ph=last&&last.s&&last.s[j]&&+last.s[j][1]>0?last.s[j]:null;if(ok)done++;
+      var r=rows[j]||[],ok=!!r[2],ph=sug&&sug.k==="up"?[sug.w,sug.r]:last&&last.s&&last.s[j]&&+last.s[j][1]>0?last.s[j]:null;if(ok)done++;
       var isKg=r.length>3,wv=isKg?r[3]:r[0],wph=ph?(isKg?kgs(Math.round(ph[0]/LB*2)/2):kgs(ph[0])):"—";
       setsH+='<div class="set'+(ok?' ok':'')+'" data-n="'+j+'"><span class="sn">'+(j+1)+'</span>'+
         '<label><input type="number" inputmode="decimal" step="0.5" min="0" data-f="0" value="'+(wv!=null&&wv!==""?wv:"")+'" placeholder="'+wph+'" aria-label="'+(isKg?'Kilos':'Libras')+', serie '+(j+1)+'"><button type="button" class="unit'+(isKg?' kg':'')+'" data-unit aria-label="Cambiar a '+(isKg?'libras':'kilos')+'">'+(isKg?'kg':'lb')+'</button></label>'+
@@ -657,8 +706,8 @@ function renderEntreno(){
     var lastS=last&&last.s?last.s.filter(function(s){return +s[1]>0;}):[];
     var lastH=lastS.length?'<p class="ex-last">Última vez (lb): <b>'+lastS.map(function(s){return kgs(s[0])+'×'+s[1];}).join(" · ")+'</b> · '+fromIso(last.d).getDate()+' '+MES3[fromIso(last.d).getMonth()]+'</p>':'';
     return '<article class="ex'+(e.arm?' arm':'')+(done>=n?' complete':'')+'" data-i="'+i+'" data-x="'+id+'"><div class="ex-top"><button type="button" class="thumbs" data-lb="'+i+'" aria-label="Ver cómo se hace '+esc(e.n)+'"><img src="'+IMG[e.img[0]]+'" alt=""><img src="'+IMG[e.img[1]!=null?e.img[1]:e.img[0]]+'" alt=""><span class="num">'+(i+1)+'</span></button>'+
-      '<div class="ex-info"><h3>'+e.n+'</h3><div class="ex-meta"><span>'+e.sr+'</span><span>· '+e.rest+'</span>'+(e.ss?'<span class="ss">'+e.ss+'</span>':'')+(e.arm?'<span class="armt">brazo</span>':'')+'<button type="button" class="lnk hl" data-hist="'+id+'" aria-label="Ver historial de '+esc(e.n)+'">'+ic("chart")+'Historial</button>'+(musOf(e)?'<button type="button" class="lnk hl mtog" data-mus="'+id+'" aria-expanded="'+!!musOpen[id]+'" aria-controls="mus-'+id+'"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4.5" r="2.2"/><path d="M7 9.5h10M12 9.5v6M12 15.5l-3 6M12 15.5l3 6M7 9.5l-2 5M17 9.5l2 5"/></svg>Músculos<i class="chv" aria-hidden="true"></i></button>':'')+'</div>'+lastH+(e.note?'<p class="ex-note">'+noteTx(e.note)+'</p>':'')+bwH(e)+altH(e)+'</div></div>'+(musOf(e)?'<button type="button" class="mrow" id="mus-'+id+'" data-lb="'+i+'" aria-label="Ver en grande los músculos que trabaja '+esc(e.n)+'"'+(musOpen[id]?'':' hidden')+'>'+musSVG(musOf(e),false)+musTxt(musOf(e))+'</button>':'')+'<div class="sets">'+setsH+'</div></article>';
-  }).join("");
+      '<div class="ex-info"><h3>'+e.n+'</h3><div class="ex-meta"><span>'+e.sr+'</span><span>· '+e.rest+'</span>'+(e.ss?'<span class="ss">'+e.ss+'</span>':'')+(e.arm?'<span class="armt">brazo</span>':'')+'<button type="button" class="lnk hl" data-hist="'+id+'" aria-label="Ver historial de '+esc(e.n)+'">'+ic("chart")+'Historial</button>'+(musOf(e)?'<button type="button" class="lnk hl mtog" data-mus="'+id+'" aria-expanded="'+!!musOpen[id]+'" aria-controls="mus-'+id+'"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4.5" r="2.2"/><path d="M7 9.5h10M12 9.5v6M12 15.5l-3 6M12 15.5l3 6M7 9.5l-2 5M17 9.5l2 5"/></svg>Músculos<i class="chv" aria-hidden="true"></i></button>':'')+'</div>'+lastH+(sug?'<p class="ex-sug'+(sug.k==="up"?' up':'')+'">'+sug.t+'</p>':'')+(e.note?'<p class="ex-note">'+noteTx(e.note)+'</p>':'')+bwH(e)+altH(e)+'</div></div>'+(musOf(e)?'<button type="button" class="mrow" id="mus-'+id+'" data-lb="'+i+'" aria-label="Ver en grande los músculos que trabaja '+esc(e.n)+'"'+(musOpen[id]?'':' hidden')+'>'+musSVG(musOf(e),false)+musTxt(musOf(e))+'</button>':'')+'<div class="sets">'+setsH+'</div></article>';
+  }).join("")+(LEGK[k]&&!gymClosed(woDate())?rodCard():"");
   updWoStats();sessBox();
   var pc=$("wdays").querySelector('[aria-pressed="true"]');if(pc){var w=$("wdays");w.scrollLeft=pc.offsetLeft-(w.clientWidth-pc.offsetWidth)/2;}
 }
@@ -732,6 +781,7 @@ $("exlist").addEventListener("input",function(e){
   if(o.row[2])updateLast(o.id,o.e);
 });
 $("exlist").addEventListener("click",function(e){
+  var rb=e.target.closest("[data-rod]");if(rb){var rd=woDate(),rdd=dayDoc(rd),rv=+rb.dataset.rod;if(rdd.rod===rv){delete rdd.rod;rdd._auth=Date.now();}else rdd.rod=rv;saveDay(rd);var card=rb.closest(".rod");if(card)card.outerHTML=rodCard();if(rdd.rod!=null)toast("Rodilla: "+rv+" de 10");return;}
   var al=e.target.closest("[data-alt]");if(al){var C=JSON.parse(JSON.stringify(sget("cfg")||{}));if(!C.alt)C.alt={};if(C.alt[al.dataset.alt])delete C.alt[al.dataset.alt];else C.alt[al.dataset.alt]=1;sput("cfg",C);
     var ix=+al.closest(".ex").dataset.i;renderEntreno();var ne=WG()[wsel].ex[ix];if(ne)toast("Ahora: "+ne.n.split(" (")[0].toLowerCase());return;}
   var mt=e.target.closest("[data-mus]");if(mt){var mid=mt.dataset.mus,on=!musOpen[mid];musOpen[mid]=on;mt.setAttribute("aria-expanded",on);var pnl=document.getElementById("mus-"+mid);if(pnl)pnl.hidden=!on;return;}

@@ -216,7 +216,7 @@
   var DAYS=[
     {k:"dom",s:"Dom",n:"Domingo",gym:"Descanso · día de batch",h:"D",cl:"Sin clases. Hoy cocinas el batch del menú que sigue (pestaña Domingo de batch)."},
     {k:"lun",s:"Lun",n:"Lunes",gym:"Gym: Empuje",h:"LM",cl:"Otorrino 7:00, Cirugía 8:30–10:15 y Gastroenterología 19:00–20:15. Gym a las 11:45."},
-    {k:"mar",s:"Mar",n:"Martes",gym:"Gym: Tirón",h:"MJ",cl:"Oftalmología 7:00, Psiquiatría 9:00–10:15 y Campos Clínicos 13:00–18:00. Gym a las 10:15."},
+    {k:"mar",s:"Mar",n:"Martes",gym:"Gym: Pull day",h:"MJ",cl:"Oftalmología 7:00, Psiquiatría 9:00–10:15 y Campos Clínicos 13:00–18:00. Gym a las 10:15."},
     {k:"mie",s:"Mié",n:"Miércoles",gym:"Gym: Pierna A",h:"LM",cl:"Otorrino 7:00, Cirugía 8:30–10:15 y Gastroenterología 19:00–20:15. Gym a las 11:45."},
     {k:"jue",s:"Jue",n:"Jueves",gym:"Gym: Brazos",h:"MJ",cl:"Oftalmología 7:00, Psiquiatría 9:00–10:15 y Campos Clínicos 13:00–18:00. Gym a las 10:15."},
     {k:"vie",s:"Vie",n:"Viernes",gym:"Gym: Torso",h:"V",cl:"Mañana libre y das Anfiteatro de 13:30 a 15:00. Gym a las 15:00."},
