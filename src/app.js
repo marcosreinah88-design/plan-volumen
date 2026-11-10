@@ -109,6 +109,10 @@ function sanDoc(k,v){
   if(k==="weights")o.e=Array.isArray(o.e)?o.e.filter(function(r){return Array.isArray(r)&&typeof r[0]==="string"&&/^\d{4}-\d\d-\d\d$/.test(r[0])&&typeof r[1]==="number"&&r[1]>20&&r[1]<400;}):[];
   if(k==="cfg"&&o.bw!=null&&o.bw!=="kg"&&o.bw!=="lb")delete o.bw;
   if(k==="tanita"&&o.e!=null&&!obj(o.e))delete o.e;
+  if(k==="tanita"&&o.e)Object.keys(o.e).forEach(function(d){var x=o.e[d];if(!obj(x))return;
+    if(x.h!=null&&!(typeof x.h==="string"&&/^([01]\d|2[0-3]):[0-5]\d$/.test(x.h)))delete x.h;
+    if(x.cond!=null){x.cond=Array.isArray(x.cond)?x.cond.filter(function(c){return typeof c==="string"&&Object.prototype.hasOwnProperty.call(TCOND,c);}):[];if(!x.cond.length)delete x.cond;}
+    if(x.nota!=null){if(typeof x.nota!=="string")delete x.nota;else x.nota=x.nota.slice(0,300);}});
   return o;
 }
 function lsGet(k){try{var v=localStorage.getItem("pvm:"+k);return v?sanDoc(k,JSON.parse(v)):null;}catch(e){return null;}}
@@ -963,6 +967,24 @@ var fmtI=new Intl.NumberFormat("es-MX",{maximumFractionDigits:0});
 var TAN0={d:"2026-07-04",kg:68.7,gp:17.2,gk:11.8,mm:54.0,mg:56.9,vis:2,bmr:1705,tbw:59,ecw:40.7,os:2.9,seg:{bi:-1,bd:-1,tr:-2,pi:-2,pd:-1},cx:"Obesidad oculta"};
 var TGOAL={kg:[72,74],mm:[57,58],gp:[15,18]};
 var tanSel=null,tanForm=false;
+/* cómo fue la medición: afecta la comparación (agua, comida y ejercicio mueven la bioimpedancia) */
+var TCOND={ayu:"En ayunas",comi:"Después de comer",ent:"Después de entrenar",nob:"Sin ir al baño",agua:"Mucha agua antes",des:"Dormí mal",enf:"Enfermo o deshidratado"};
+var TCOND_RISK={comi:1,ent:1,nob:1,agua:1,des:1,enf:1};
+var tanNote=false;
+function hm12(h){var a=h.split(":"),H=+a[0];return (H%12||12)+":"+a[1]+(H<12?" am":" pm");}
+function tanNoteFields(c){c=c||{};var cs=c.cond||[];
+  return '<fieldset class="wide tnote"><legend>Cómo fue la medición (opcional)</legend>'+
+    '<label><span>Hora</span><input type="time" id="t_h" value="'+(c.h||"")+'"></label>'+
+    '<div class="tchips" role="group" aria-label="Condiciones">'+Object.keys(TCOND).map(function(k){return '<button type="button" class="chip" data-tcond="'+k+'" aria-pressed="'+(cs.indexOf(k)>=0)+'">'+TCOND[k]+'</button>';}).join("")+'</div>'+
+    '<label class="wide"><span>Nota</span><textarea id="t_nota" maxlength="300" rows="2" placeholder="Ej.: me la hice en otra sucursal, con ropa de calle…">'+esc(c.nota||"")+'</textarea></label></fieldset>';}
+function tanNoteRead(x){var h=($("t_h")||{}).value||"";if(/^([01]\d|2[0-3]):[0-5]\d$/.test(h))x.h=h;else delete x.h;
+  var cs=[];document.querySelectorAll("#pgtan [data-tcond][aria-pressed=true]").forEach(function(b){cs.push(b.dataset.tcond);});if(cs.length)x.cond=cs;else delete x.cond;
+  var n=(($("t_nota")||{}).value||"").trim().slice(0,300);if(n)x.nota=n;else delete x.nota;return x;}
+function tanNoteView(c){var parts=[];if(c.h)parts.push('<span class="tn-h">'+hm12(c.h)+'</span>');(c.cond||[]).forEach(function(k){if(TCOND[k])parts.push('<span class="tn-c'+(TCOND_RISK[k]?' risk':'')+'">'+TCOND[k]+'</span>');});
+  if(!parts.length&&!c.nota)return "";
+  var risk=(c.cond||[]).filter(function(k){return TCOND_RISK[k];});
+  return '<div class="tnv">'+(parts.length?'<div class="tn-l">'+parts.join("")+'</div>':'')+(c.nota?'<p class="small">'+esc(c.nota)+'</p>':'')+
+    (risk.length?'<p class="small muted">Ojo al comparar ('+risk.map(function(k){return TCOND[k].toLowerCase();}).join(", ")+'): eso cambia el agua del cuerpo y puede mover la grasa y el músculo unos puntos.</p>':'')+'</div>';}
 var SEGN={bi:"Brazo izq.",bd:"Brazo der.",tr:"Tronco",pi:"Pierna izq.",pd:"Pierna der."};
 function tanList(){var T=sget("tanita"),m={};m[TAN0.d]=TAN0;if(T&&T.e)Object.keys(T.e).forEach(function(d){var x=T.e[d];if(x&&x.del)delete m[d];else if(x)m[d]=x;});
   return Object.keys(m).sort().map(function(d){var x=JSON.parse(JSON.stringify(m[d]));x.d=d;return x;});}
@@ -982,7 +1004,9 @@ function tanBar(lbl,from,cur,g,kgUnit,unit){
 function renderTanita(){
   var L=tanList(),i=tanSel==null?L.length-1:Math.max(0,Math.min(L.length-1,tanSel)),c=L[i],p=i>0?L[i-1]:null,b=L[0],dd=fromIso(c.d),dl=ddiff(TANITA,TODAY);
   var h='<div class="sec-h"><h3 style="font-size:1.05rem">Composición corporal</h3><span class="r eyebrow">Tanita · '+dd.getDate()+' '+MES3[dd.getMonth()]+' '+dd.getFullYear()+'</span></div>';
-  if(L.length>1)h+='<div class="seg tsel" role="group" aria-label="Medición">'+L.map(function(x,j){var q=fromIso(x.d);return '<button type="button" data-tsel="'+j+'" aria-pressed="'+(j===i)+'">'+q.getDate()+' '+MES3[q.getMonth()]+(q.getFullYear()!==TODAY.getFullYear()?' '+String(q.getFullYear()).slice(2):'')+'</button>';}).join("")+'</div>';
+  if(L.length>1)h+='<div class="seg tsel" role="group" aria-label="Medición">'+L.map(function(x,j){var q=fromIso(x.d);return '<button type="button" data-tsel="'+j+'" aria-pressed="'+(j===i)+'"'+(x.h||x.cond||x.nota?' class="hasn" title="Tiene nota"':'')+'>'+q.getDate()+' '+MES3[q.getMonth()]+(q.getFullYear()!==TODAY.getFullYear()?' '+String(q.getFullYear()).slice(2):'')+'</button>';}).join("")+'</div>';
+  if(tanNote&&!tanForm)h+='<form class="tform" id="tnf">'+tanNoteFields(c)+'<div class="wide" style="display:flex;gap:8px"><button class="btn pri" type="submit">Guardar nota</button><button class="btn ghost" type="button" data-tnote="0">Cancelar</button></div></form>';
+  else h+=tanNoteView(c);
   var mmLow=c.mm!=null&&c.mm<56.7;
   var T=[
    ["Peso",c.kg!=null?tanW(c.kg):"—","",tanDelta(c,p,"kg",1,true)],
@@ -996,26 +1020,31 @@ function renderTanita(){
    ["Masa ósea",c.os!=null?tanW(c.os):"—","",tanDelta(c,p,"os",0,true)]];
   T=T.filter(function(t){return t[1]!=="—";});
   h+='<div class="tgrid">'+T.map(function(t){return '<div class="tcell"><span class="tl">'+t[0]+'</span><b>'+t[1]+'</b>'+(t[3]||"")+(t[2]?'<span class="ts">'+t[2]+'</span>':'')+'</div>';}).join("")+'</div>';
-  if(c.cx)h+='<p class="small muted"><b style="color:var(--ink)">Complexión: '+c.cx+'.</b> '+(/oculta/i.test(c.cx)?'Quiere decir poco músculo para tu peso, no que tengas obesidad. Se corrige subiendo músculo, que es justo lo que hace este plan.':'')+'</p>';
+  if(c.cx)h+='<p class="small muted"><b style="color:var(--ink)">Complexión: '+esc(c.cx)+'.</b> '+(/oculta/i.test(c.cx)?'Quiere decir poco músculo para tu peso, no que tengas obesidad. Se corrige subiendo músculo, que es justo lo que hace este plan.':'')+'</p>';
   if(c.seg){h+='<div class="tseg"><span class="tl">Músculo por segmento <small>(0 = promedio)</small></span><div>'+["bd","tr","bi","pd","pi"].map(function(k){var v=c.seg[k];return '<div class="sg '+(v==null?"":v<0?"neg":v>0?"pos":"zer")+'"><b>'+(v==null?"—":(v>0?"+":v<0?"−":"")+Math.abs(v))+'</b><span>'+SEGN[k]+'</span></div>';}).join("")+'</div></div>';}
   h+='<div class="tgo"><span class="tl">Hacia la meta de 6 meses <small>(punto gris = julio)</small></span>'+
     (c.kg!=null?tanBar("Peso",b.kg,c.kg,TGOAL.kg,true,bwU()):"")+(c.mm!=null?tanBar("Masa muscular",b.mm,c.mm,TGOAL.mm,true,bwU()):"")+(c.gp!=null?tanBar("Grasa",b.gp,c.gp,TGOAL.gp,false,"%"):"")+'</div>';
   h+='<div class="cd-bar tcd"><b class="disp" style="font-size:2.2rem;color:var(--food)">'+Math.max(0,dl)+'</b><p class="small muted">días para la próxima Tanita ('+TANITA.getDate()+' '+MES3[TANITA.getMonth()]+' '+TANITA.getFullYear()+'). Ve en ayunas, sin entrenar antes y a la misma hora que la anterior para poder compararlas.</p></div>';
-  if(!tanForm)h+='<div style="display:flex;gap:8px;flex-wrap:wrap">'+(PWA?(gemKey()?'<label class="btn pri sm">Escanear hoja con IA<input type="file" class="fpick" accept="image/*,application/pdf" data-tscan></label>':'<button type="button" class="btn pri sm" data-tadd="1">Escanear hoja con IA</button>'):'')+'<button type="button" class="btn ghost sm" data-tadd="1">Agregar medición nueva</button>'+(c.d!==TAN0.d?'<button type="button" class="btn ghost sm" data-tdel="'+c.d+'">Borrar esta medición</button>':'')+'</div>';
+  if(!tanForm)h+='<div style="display:flex;gap:8px;flex-wrap:wrap">'+(PWA?(gemKey()?'<label class="btn pri sm">Escanear hoja con IA<input type="file" class="fpick" accept="image/*,application/pdf" data-tscan></label>':'<button type="button" class="btn pri sm" data-tadd="1">Escanear hoja con IA</button>'):'')+'<button type="button" class="btn ghost sm" data-tadd="1">Agregar medición nueva</button>'+(tanNote?'':'<button type="button" class="btn ghost sm" data-tnote="1">'+(c.h||c.cond||c.nota?'Editar nota':'Agregar nota')+'</button>')+(c.d!==TAN0.d?'<button type="button" class="btn ghost sm" data-tdel="'+c.d+'">Borrar esta medición</button>':'')+'</div>';
   else{var u=bwU();function F(id,l,un,st,ph){return '<label><span>'+l+'</span><input type="number" inputmode="decimal" step="'+st+'" id="'+id+'" placeholder="'+ph+'"><em>'+un+'</em></label>';}
     h+='<form class="tform" id="tf">'+(PWA?'<div class="wide tai" id="t_ai">'+tanAiBox()+'</div>':'')+'<label class="wide"><span>Fecha</span><input type="date" id="t_d" value="'+iso(TODAY)+'" max="'+iso(TODAY)+'"></label>'+
      F("t_kg","Peso",u,"0.1",bw(c.kg))+F("t_gp","Grasa","%","0.1",c.gp)+F("t_gk","Masa grasa",u,"0.1",bw(c.gk))+F("t_mm","Masa muscular",u,"0.1",bw(c.mm))+F("t_mg","Masa magra",u,"0.1",bw(c.mg))+F("t_vis","Grasa visceral","nivel","1",c.vis)+F("t_bmr","Metabolismo basal","kcal","1",c.bmr)+F("t_tbw","Agua total","%","0.1",c.tbw)+F("t_ecw","ECW/TBW","%","0.1",c.ecw)+F("t_os","Masa ósea",u,"0.1",bw(c.os))+
      '<fieldset class="wide"><legend>Músculo por segmento (opcional)</legend>'+["bd","tr","bi","pd","pi"].map(function(k){return '<label><span>'+SEGN[k]+'</span><select id="t_s_'+k+'"><option value="">—</option>'+[-4,-3,-2,-1,0,1,2,3,4].map(function(v){return '<option value="'+v+'">'+(v>0?"+":"")+v+'</option>';}).join("")+'</select></label>';}).join("")+'</fieldset>'+
-     '<label class="wide"><span>Complexión que marca</span><input type="text" id="t_cx" maxlength="40" placeholder="'+(c.cx||"")+'"></label>'+
+     '<label class="wide"><span>Complexión que marca</span><input type="text" id="t_cx" maxlength="40" placeholder="'+esc(c.cx||"")+'"></label>'+tanNoteFields(null)+
      '<div class="wide" style="display:flex;gap:8px"><button class="btn pri" type="submit">Guardar medición</button><button class="btn ghost" type="button" data-tadd="0">Cancelar</button></div><p class="small muted wide">Llena lo que traiga tu hoja. Lo que dejes vacío no se guarda.</p></form>';}
   $("pgtan").innerHTML=h;
 }
 $("pgtan").addEventListener("click",function(e){
-  var s=e.target.closest("[data-tsel]");if(s){tanSel=+s.dataset.tsel;renderTanita();return;}
-  var a=e.target.closest("[data-tadd]");if(a){tanForm=a.dataset.tadd==="1";if(!GEM.busy)GEM.msg="";renderTanita();if(tanForm){var el=$("t_kg");if(el)el.focus();}return;}
+  var s=e.target.closest("[data-tsel]");if(s){tanSel=+s.dataset.tsel;tanNote=false;renderTanita();return;}
+  var tc=e.target.closest("[data-tcond]");if(tc){var on=tc.getAttribute("aria-pressed")!=="true";tc.setAttribute("aria-pressed",on);
+    if(on&&(tc.dataset.tcond==="ayu"||tc.dataset.tcond==="comi")){var o=$("pgtan").querySelector('[data-tcond="'+(tc.dataset.tcond==="ayu"?"comi":"ayu")+'"]');if(o)o.setAttribute("aria-pressed","false");}return;}
+  var tn=e.target.closest("[data-tnote]");if(tn){tanNote=tn.dataset.tnote==="1";if(tanNote)tanForm=false;renderTanita();if(tanNote){var f=$("t_h");if(f)f.focus();}return;}
+  var a=e.target.closest("[data-tadd]");if(a){tanForm=a.dataset.tadd==="1";tanNote=false;if(!GEM.busy)GEM.msg="";renderTanita();if(tanForm){var el=$("t_kg");if(el)el.focus();}return;}
   var d=e.target.closest("[data-tdel]");if(d){if(d.dataset.arm!=="1"){d.dataset.arm="1";d.textContent="¿Seguro? Toca otra vez";setTimeout(function(){if(d.isConnected){d.dataset.arm="";d.textContent="Borrar esta medición";}},3500);return;}tanSave(d.dataset.tdel,{del:1});tanSel=null;renderTanita();toast("Medición borrada");}
 });
 $("pgtan").addEventListener("submit",function(e){
+  if(e.target.id==="tnf"){e.preventDefault();var L=tanList(),i=tanSel==null?L.length-1:Math.max(0,Math.min(L.length-1,tanSel)),c=JSON.parse(JSON.stringify(L[i])),d=c.d;delete c.d;delete c._t;
+    tanNoteRead(c);tanSave(d,c);tanNote=false;renderTanita();toast("Nota guardada");return;}
   if(e.target.id!=="tf")return;e.preventDefault();
   var dt=$("t_d").value;if(!dt||dt>iso(TODAY)){toast("Pon una fecha válida");return;}
   function n(id){var v=$(id).value;if(v===""||v==null)return null;v=parseFloat(String(v).replace(",","."));return isFinite(v)?v:null;}
@@ -1025,6 +1054,7 @@ $("pgtan").addEventListener("submit",function(e){
   if(x.gp!=null&&!(x.gp>2&&x.gp<60)){toast("Revisa el % de grasa");return;}
   var seg={},sc=0;Object.keys(SEGN).forEach(function(k){var v=$("t_s_"+k).value;if(v!==""){seg[k]=+v;sc++;}});if(sc)x.seg=seg;
   var cx=$("t_cx").value.trim();if(cx)x.cx=cx;
+  tanNoteRead(x);
   if(!cnt){toast("Llena al menos un valor");return;}
   if(x.kg!=null){var W=JSON.parse(JSON.stringify(getDoc("weights",{e:[]})));if(!W.e.some(function(r){return r[0]===dt;})){W.e.push([dt,x.kg]);W.e.sort(function(a,b){return a[0]<b[0]?-1:1;});sput("weights",W);}}
   tanSave(dt,x);tanForm=false;tanSel=null;GEM.msg="";renderProgreso();toast("Medición guardada");
@@ -1040,6 +1070,7 @@ var GEM_PROMPT="Eres un lector de reportes de composición corporal Tanita (por 
  "vis: nivel de grasa visceral\nbmr: metabolismo basal en kcal\ntbw: agua corporal total en % del peso\ntbw_kg: agua corporal total en masa\n"+
  "ecw: agua extracelular como % del agua total (ECW/TBW)\nos: masa ósea\ncx: tipo de complexión física tal como aparece (texto corto, en español si se puede)\n"+
  "seg: objeto con la puntuación muscular por segmento (entero de -4 a 4, la gráfica de puntuación o calificación muscular segmental, no la masa en kg), con claves bd (brazo derecho), bi (brazo izquierdo), tr (tronco), pd (pierna derecha), pi (pierna izquierda); null si no aparece.\n"+
+ "hora: hora de la medición en formato 24 h HH:MM, si la hoja la trae (o null)\n"+
  "Si la hoja trae varias mediciones, usa la más reciente.";
 function gemKey(){try{return localStorage.getItem("pvmgem:key")||"";}catch(e){return "";}}
 function gemSetKey(v){try{if(v)localStorage.setItem("pvmgem:key",v);else localStorage.removeItem("pvmgem:key");}catch(e){}}
@@ -1106,6 +1137,7 @@ function gemClean(o){
   if(x.vis!=null)x.vis=Math.round(x.vis*2)/2;if(x.bmr!=null)x.bmr=Math.round(x.bmr);
   var seg={};if(o.seg&&typeof o.seg==="object")Object.keys(SEGN).forEach(function(k){var v=N(o.seg[k],-4,4);if(v!=null)seg[k]=Math.round(v);});x.seg=seg;
   x.cx=typeof o.cx==="string"?o.cx.replace(/[\u0000-\u001f<>]/g,"").trim().slice(0,40):"";
+  x.h=typeof o.hora==="string"&&/^([01]\d|2[0-3]):[0-5]\d$/.test(o.hora)?o.hora:null;
   x.d=typeof o.fecha==="string"&&/^\d{4}-\d\d-\d\d$/.test(o.fecha)&&!isNaN(fromIso(o.fecha))&&o.fecha<=iso(TODAY)&&o.fecha>="2020-01-01"?o.fecha:null;
   return x;
 }
@@ -1116,6 +1148,7 @@ function tanAiFill(x){
   ["kg","gp","gk","mm","mg","vis","bmr","tbw","ecw","os"].forEach(function(k){var v=x[k];if(v==null)return;put("t_"+k,kgF[k]?Math.round(toU(v)*10)/10:v);});
   Object.keys(x.seg||{}).forEach(function(k){put("t_s_"+k,String(x.seg[k]));});
   if(x.cx)put("t_cx",x.cx);
+  if(x.h)put("t_h",x.h);
   if(x.d){var dEl=$("t_d");if(dEl){dEl.value=x.d;dEl.classList.add("ai");}}
   return n;
 }

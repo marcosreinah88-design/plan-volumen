@@ -796,3 +796,15 @@ label.btn{position:relative;cursor:pointer}
 .tai-st{display:flex;align-items:center;gap:8px;color:var(--ink)}
 .tai-dot{width:10px;height:10px;border-radius:50%;background:var(--gym);animation:blink 1s infinite}
 .tform input.ai,.tform select.ai{border-color:var(--gym);background:var(--gym-soft)}
+/* nota de cada medición de la Tanita */
+.tform fieldset.tnote{grid-template-columns:1fr;gap:8px;padding:10px}
+.tchips{display:flex;flex-wrap:wrap;gap:6px}
+.tchips .chip{font-size:.8rem}
+.tform textarea{width:100%;min-width:0;font:inherit;font-size:.95rem;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;resize:vertical}
+.tnv{display:grid;gap:4px;padding:8px 10px;border-radius:10px;background:var(--surface2)}
+.tnv p{margin:0}
+.tn-l{display:flex;flex-wrap:wrap;gap:6px}
+.tn-l span{font-size:.75rem;padding:2px 8px;border-radius:999px;border:1px solid var(--line)}
+.tn-l .tn-h{font-weight:600}
+.tn-l .risk{border-color:var(--warn);background:var(--warn-soft)}
+.tsel .hasn::after{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--gym);margin-left:5px;vertical-align:middle}
