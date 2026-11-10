@@ -9,8 +9,8 @@ var IMG=PD.img, GD=PD.days, FR=PD.frag;
 /* ================= constantes del plan ================= */
 var KEYS=["dom","lun","mar","mie","jue","vie","sab"];
 var GK=["lun","mar","mie","jue","vie","sab"];
-var SHORT={lun:"Empuje",mar:"Tirón",mie:"Pierna A",jue:"Brazos",vie:"Torso",sab:"Pierna B",dom:"Batch"};
-var WSHORT={lun:"Empuje",mar:"Tirón",mie:"Pierna",jue:"Brazos",vie:"Torso",sab:"Pierna",dom:"Batch"};
+var SHORT={lun:"Empuje",mar:"Pull day",mie:"Pierna A",jue:"Brazos",vie:"Torso",sab:"Pierna B",dom:"Batch"};
+var WSHORT={lun:"Empuje",mar:"Pull day",mie:"Pierna",jue:"Brazos",vie:"Torso",sab:"Pierna",dom:"Batch"};
 var GYMT={lun:"11:45",mar:"10:15",mie:"11:45",jue:"10:15",vie:"15:00",sab:"10:00"};
 var GMIN={lun:80,mar:85,mie:75,jue:90,vie:80,sab:80};
 var CLS={lun:[["7:00","8:15","Otorrino"],["8:30","10:15","Cirugía"],["19:00","20:15","Gastroenterología"]],
