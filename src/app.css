@@ -440,6 +440,9 @@ td small{color:var(--muted);font-size:.8rem}
 .cmpl li.down .tg{background:var(--warn-soft);color:var(--warn)}
 .cmpb{display:grid;gap:4px;border-left:3px solid var(--line);padding-left:10px}
 .cmpb.g{border-left-color:var(--ok)}.cmpb.w{border-left-color:var(--warn)}.cmpb.n{border-left-color:var(--gym)}
+.reco{border-left-width:4px}
+#woreco{padding:12px 14px}
+#woreco[hidden]{display:none}
 .cmpb ul{margin:0;padding-left:18px;display:grid;gap:4px;font-size:.88rem;line-height:1.4}
 .wo-done b{font-family:var(--display);font-weight:900;font-size:2rem;line-height:1;color:var(--ok)}
 .cd-bar{display:flex;gap:10px;align-items:center}

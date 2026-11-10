@@ -765,6 +765,7 @@ function updWoStats(){
   s.querySelector("b").textContent=n+"/"+tot;s.classList.toggle("ok",n>=tot);
   v.querySelector("b").textContent=fmt.format(Math.round(vol));
   $("wofoot").innerHTML=n>=tot?'<div class="wo-done"><b>Entreno completo</b><p class="small muted">'+tot+' series y '+fmt.format(Math.round(vol))+' lb movidas. Toca tu cena de post-entreno.</p></div>'+cmpHTML(k,woDate()):'';
+  var rc=$("woreco");if(rc){var h0=n>=tot?'':recoHTML(k,woDate());rc.hidden=!h0;rc.innerHTML=h0;}
 }
 /* ===== al completar la rutina: comparación con la misma sesión de la semana pasada y análisis por reglas (sin internet) ===== */
 function dayKeyOf(d){var rk=dayRK(d);if(rk)return rk;return modeOf(d)==="sup"?"sup":KEYS[d.getDay()];}
@@ -791,6 +792,25 @@ function cmpData(k,d){
   var Sc=sess(d),Sp=sess(P.d);
   return {P:P,X:X,both:both,cv:cv,pv:pv,cr:cr,pr:pr,deload:deload,mc:Sc.st==="off"?0:Math.round(Sc.ms/60000),mp:Sp.st==="off"?0:Math.round(Sp.ms/60000),goal:GMat(d)[k]||0};
 }
+/* recomendaciones para la siguiente sesión de la misma rutina; pre=true cuando se muestran al empezar (Entreno, arriba) */
+function cmpNext(x,pre){
+  var next=[],B=x.X.filter(function(o){return o.c&&o.p;}),dn=B.filter(function(o){return o.st==="down";}),eq=B.filter(function(o){return o.st==="eq";});
+  if(x.deload){next.push(pre?'Terminó la descarga: regresa a tus pesos de antes.':'La semana que viene vuelve el bloque: regresa a tus pesos de antes de la descarga.');return next;}
+  var tp=x.X.filter(function(o){return o.c&&o.top;});if(tp.length)next.push((pre?'Sube ':'La próxima sube ')+STEP+' lb en '+cmpList(tp.map(function(o){return o.n;}))+': '+(pre?'la vez pasada llegaste':'llegaste')+' al tope de reps en todas.');
+  if(dn.length)next.push('En '+cmpList(dn.map(function(o){return o.n;}))+' repite el peso '+(pre?'de la vez pasada':'de hoy')+' hasta recuperar las reps. Si bajas dos semanas seguidas, revisa sueño y comida.');
+  var fd=x.X.filter(function(o){return o.c&&o.fade&&o.st!=="up";});if(fd.length)next.push('En '+cmpList(fd.map(function(o){return o.n;}))+' se te cayeron mucho las reps de la primera a la última serie: descansa el tiempo completo ('+esc(fd[0].e.rest)+').');
+  var eq2=eq.filter(function(o){return !o.top;});if(eq2.length)next.push('En '+cmpList(eq2.map(function(o){return o.n;}))+' busca +1 rep en la primera serie con el mismo peso.');
+  if(x.mc&&x.goal&&x.mc>x.goal+15)next.push('Usa el cronómetro de descanso y no alargues entre series para quedar en ≈'+x.goal+' min.');
+  if(!next.length)next.push('Sigue con lo que te sugiere cada ejercicio: +1 rep hasta el tope del rango y luego +'+STEP+' lb.');
+  return next.slice(0,4);}
+/* al empezar: las recomendaciones que dejó la última sesión de esta rutina (solo si hoy todavía no la terminas) */
+function recoHTML(k,d){
+  var ids=exList(k,d).map(exId),P=prevSession(k,d,ids);if(!P)return '';
+  var x=cmpData(k,P.d);
+  if(!x){var dd0=P.doc,bi=blockInfo(P.d);x={deload:!bi.pre&&bi.wk===5,mc:0,goal:0,X:exList(k,P.d).map(function(e){var n=setsN(e,P.d),c=sessSum(dd0.s[exId(e)],n),rr=repRange(e.sr),o={e:e,n:String(e.n).split(" (")[0].split(",")[0],c:c,p:null};
+    if(c){o.top=rr&&c.nt>=Math.min(2,n)&&c.minR>=rr[1];var T=c.s.filter(function(z){return z[0]===c.w;});o.fade=c.s.length>=3&&T.length>=2&&T[T.length-1][1]<=Math.floor(T[0][1]*0.7);}return o;})};}
+  var pd=P.d;
+  return '<div class="cmpb n reco"><span class="eyebrow">Recomendaciones de la vez pasada · '+DAYS[pd.getDay()].n.toLowerCase()+' '+pd.getDate()+' '+MES3[pd.getMonth()]+'</span><ul>'+cmpNext(x,true).map(function(t){return '<li>'+t+'</li>';}).join("")+'</ul></div>';}
 function cmpList(a){a=a.map(function(x){return '<b style="color:var(--fg)">'+esc(x)+'</b>';});return a.length<2?a.join(""):a.slice(0,-1).join(", ")+" y "+a[a.length-1];}
 function cmpHTML(k,d){
   var x=cmpData(k,d);
@@ -802,7 +822,7 @@ function cmpHTML(k,d){
   h+='<ul class="cmpl">'+x.X.map(function(o){if(!o.c)return '';
     var a=o.p?kgs(o.p.w)+'×'+o.p.s.filter(function(s){return s[0]===o.p.w;}).map(function(s){return s[1];}).join('/'):'—',b=kgs(o.c.w)+'×'+o.c.s.filter(function(s){return s[0]===o.c.w;}).map(function(s){return s[1];}).join('/');
     return '<li class="'+(o.st||'new')+'"><span class="nm">'+esc(o.n)+'</span><span class="vs">'+a+' → <b>'+b+'</b></span><span class="tg">'+(o.st==="new"?'nuevo':o.tag)+'</span></li>';}).join("")+'</ul><p class="small muted">Libras × reps de las series con tu peso más alto.</p>';
-  var good=[],bad=[],next=[];
+  var good=[],bad=[],next=cmpNext(x,false);
   if(up.length)good.push('Subiste en '+cmpList(up.map(function(o){return o.n;}))+'.');
   if(vp>=3)good.push('Moviste '+vp+'% más volumen que la semana pasada.');
   good.push('Completaste todas las series.');
@@ -815,15 +835,6 @@ function cmpHTML(k,d){
     if(x.mc&&x.goal&&x.mc>x.goal+15)bad.push('La sesión duró '+dur(x.mc)+', '+dur(x.mc-x.goal)+' más que la meta.');
   }
   if(!bad.length)bad.push('Nada en contra hoy.');
-  if(x.deload)next.push('La semana que viene vuelve el bloque: regresa a tus pesos de antes de la descarga.');
-  else{
-    var tp=x.X.filter(function(o){return o.c&&o.top;});if(tp.length)next.push('La próxima sube '+STEP+' lb en '+cmpList(tp.map(function(o){return o.n;}))+': llegaste al tope de reps en todas.');
-    if(dn.length)next.push('En '+cmpList(dn.map(function(o){return o.n;}))+' repite el peso de hoy hasta recuperar las reps. Si bajas dos semanas seguidas, revisa sueño y comida.');
-    var fd=x.X.filter(function(o){return o.c&&o.fade&&o.st!=="up";});if(fd.length)next.push('En '+cmpList(fd.map(function(o){return o.n;}))+' se te caen mucho las reps de la primera a la última serie: descansa el tiempo completo ('+esc(fd[0].e.rest)+').');
-    var eq2=eq.filter(function(o){return !o.top;});if(eq2.length)next.push('En '+cmpList(eq2.map(function(o){return o.n;}))+' busca +1 rep en la primera serie con el mismo peso.');
-    if(x.mc&&x.goal&&x.mc>x.goal+15)next.push('Usa el cronómetro de descanso y no alargues entre series para quedar en ≈'+x.goal+' min.');
-    if(!next.length)next.push('Sigue con lo que te sugiere cada ejercicio: +1 rep hasta el tope del rango y luego +'+STEP+' lb.');
-  }
   var blk=function(t,c,a){return '<div class="cmpb '+c+'"><span class="eyebrow">'+t+'</span><ul>'+a.map(function(s){return '<li>'+s+'</li>';}).join("")+'</ul></div>';};
   h+=blk('Qué hiciste bien','g',good)+blk('Qué no salió','w',bad)+blk('Qué mejorar la próxima','n',next.slice(0,4))+'</div>';
   return h;
