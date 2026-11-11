@@ -859,3 +859,19 @@ label.btn{position:relative;cursor:pointer}
 .meal-b:not([hidden]),.mrow:not([hidden]){animation:fadeIn .22s ease}
 .ex.complete{transition:border-color .25s,box-shadow .4s}
 @media (prefers-reduced-motion:reduce){.vin>*,.vin #exlist>*,.vin .tl>.ti,.set .go.pop,.meal-b,.mrow{animation:none!important}.btn:active,.chip:active,.wd:active,.medb:active,.rodb button:active,.seg button:active{transform:none}}
+
+/* semanas pasadas: navegación y solo lectura */
+.wnav{display:flex;align-items:center;gap:8px;margin-bottom:-4px}
+.wnl{flex:1;min-width:0;display:grid;gap:1px;text-align:center}
+.wnl b{font-size:.92rem}
+.wnl span{font-family:var(--mono);font-size:.68rem;color:var(--muted);letter-spacing:.04em}
+.wnb{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:10px;min-width:36px;height:34px;padding:0 8px;display:grid;place-items:center;cursor:pointer;font-size:.8rem;font-weight:600}
+.wnb svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.wnb:disabled{opacity:.3;cursor:default}
+.wnb.wnh{color:var(--gym);border-color:color-mix(in srgb,var(--gym) 45%,var(--line))}
+.ro .wnl b{color:var(--gym)}
+.ro .swb,.ro [data-gc],.ro .mtag svg{display:none}
+.ro .mtag{pointer-events:none}
+.ro .set input:disabled{opacity:1;color:var(--fg);-webkit-text-fill-color:var(--fg)}
+.ro .set .go:disabled,.ro .set .unit:disabled,.ro .rodb button:disabled{cursor:default}
+.ro .rodb button:disabled:not([aria-pressed="true"]){opacity:.45}
