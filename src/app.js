@@ -606,7 +606,7 @@ function renderWsum(){var el=$("wsum");if(!el)return;var dw=TODAY.getDay();
   el.hidden=false;el.className="card wsum";el.innerHTML=h;}
 function renderHoy(){renderHero();renderWeek();renderMed();renderWq();renderWsum();renderNext();renderTimeline();renderHabits();}
 
-$("week").addEventListener("click",function(e){var b=e.target.closest(".wd");if(!b)return;selDay=fromIso(b.dataset.d);wfor=null;renderHoy();});
+$("week").addEventListener("click",function(e){var b=e.target.closest(".wd");if(!b)return;selDay=fromIso(b.dataset.d);wfor=null;renderHoy();vin($("tl"));});
 $("tl").addEventListener("click",function(e){
   var gcb=e.target.closest("[data-gc]");if(gcb){var gd0=selDay,gdd=dayDoc(gd0),on=gcb.dataset.gc==="1";if(on)gdd.gc=1;else{delete gdd.gc;gdd._auth=Date.now();}saveDay(gd0);renderHoy();toast(on?"Gimnasio cerrado: ese día no cuenta en tu racha":"Listo, el entreno de ese día vuelve a contar");return;}
   var t=e.target.closest("[data-tog]");
@@ -895,7 +895,7 @@ $("exlist").addEventListener("click",function(e){
     [0,1].forEach(function(f){var cur=f===0&&o.row.length>3?o.row[3]:o.row[f];if(cur===""||cur==null){var p=parseFloat(String(ins[f].placeholder).replace(",","."));if(!isNaN(p)&&!/–/.test(ins[f].placeholder)){if(f===0&&o.row.length>3){o.row[3]=p;o.row[0]=toLb(p);}else o.row[f]=p;ins[f].value=p;}}});
     o.row[2]=1;
   }else{o.row[2]=0;dayDoc(woDate())._auth=Date.now();}
-  row.classList.toggle("ok",!!o.row[2]);go.setAttribute("aria-pressed",!!o.row[2]);
+  row.classList.toggle("ok",!!o.row[2]);go.setAttribute("aria-pressed",!!o.row[2]);if(o.row[2]){go.classList.remove("pop");void go.offsetWidth;go.classList.add("pop");}
   if(o.row[2]&&navigator.vibrate)try{navigator.vibrate(15);}catch(er){}
   var past=woPast(),sesNew=false;if(o.row[2]&&!past){var dd0=dayDoc(TODAY);dd0.lt=Date.now();if(!dd0.ss||dd0.se){if(!dd0.ss)sesNew=true;dd0.ss=dd0.ss||Date.now();delete dd0.se;}}
   saveDay(woDate());
@@ -929,7 +929,7 @@ function updateLast(id,e){
   sets.forEach(function(s){if(s[0]>0&&s[1]>0){var v=e1rm(s[0],s[1]);if(!b||v>b.e+0.01){b={n:e.n,kg:s[0],r:s[1],e:Math.round(v*10)/10,d:td};chg=true;}}});
   if(chg){var was=B[id];B[id]=b;sput("best",B);if(was)toast("Nuevo récord en "+e.n.split(" (")[0].toLowerCase()+": "+kgs(b.kg)+" lb × "+b.r);}
 }
-$("wdays").addEventListener("click",function(e){var b=e.target.closest("[data-wd]");if(!b)return;wsel=b.dataset.wd;wtoday=false;wfor=null;sessEdit=false;renderEntreno();});
+$("wdays").addEventListener("click",function(e){var b=e.target.closest("[data-wd]");if(!b)return;wsel=b.dataset.wd;wtoday=false;wfor=null;sessEdit=false;renderEntreno();vin($("exlist"));});
 $("wohead").addEventListener("click",function(e){var sb=e.target.closest("[data-sess]");if(sb){ensureAudio();var a=sb.dataset.sess;if(a==="edit"){sessEdit=true;sessBox();var f=$("sesMin");if(f)f.focus();return;}if(a==="cancel"){sessEdit=false;sessBox();return;}
 if(a==="save"){var hm=$("sesIni").value,mn=parseInt($("sesMin").value,10);if(!/^\d{1,2}:\d{2}$/.test(hm)||!(mn>0&&mn<=600)){toast("Escribe la hora de inicio y los minutos que duró");return;}sessSet(fromIso(sb.dataset.d),hm,mn);return;}
 if(a==="reset"){if(!rstArm){rstArm=1;sessBox();setTimeout(function(){if(rstArm){rstArm=0;sessBox();}},3500);return;}rstArm=0;sessReset(fromIso(sb.dataset.d));return;}if(a==="start")sessStart();else if(a==="end")sessEnd();else sessResume();return;}var rks=e.target.closest("[data-rkset]");if(rks){e.preventDefault();var nk=rks.dataset.rkset;setRK(TODAY,nk);wsel=GD[nk]?nk:"lun";wtoday=false;renderAll();toast(GD[nk]?"Hoy queda como "+GD[nk].t.toLowerCase():"Hoy queda como descanso");return;}var wmb=e.target.closest("[data-wmode]");if(wmb){var m=wmb.dataset.wmode;setMode(TODAY,m);wfor=null;if(m==="sup")wsel="sup";else if(wsel==="sup")wsel=GD[TKEY]&&TKEY!=="sup"?TKEY:"lun";renderAll();toast("Semana "+MODES[m].n.toLowerCase()+": "+MODES[m].d);return;}var wt=e.target.closest("[data-wtoday]");if(wt){e.preventDefault();wtoday=wt.dataset.wtoday==="1";wfor=null;renderEntreno();return;}if(e.target.closest("[data-goguia]")){e.preventDefault();show("guia");var el=$("lcap");if(el)el.scrollIntoView({block:"start"});}});
@@ -1809,11 +1809,13 @@ document.addEventListener("click",function(e){
 });
 $("setbtn").addEventListener("click",function(){show(view==="ajustes"?"hoy":"ajustes");});
 var R={hoy:renderHoy,entreno:renderEntreno,comida:renderComida,progreso:renderProgreso,guia:renderGuia,ajustes:renderAjustes};
+/* animación de entrada: se pone la clase un momento y se quita, así lo que se vuelve a pintar después no se anima de nuevo */
+function vin(el){if(!el)return;el.classList.remove("vin");void el.offsetWidth;el.classList.add("vin");clearTimeout(el._vt);el._vt=setTimeout(function(){el.classList.remove("vin");},700);}
 function show(v){
   view=v;
   Object.keys(R).forEach(function(k){$("v-"+k).hidden=k!==v;});
   $("nav").querySelectorAll("button").forEach(function(b){if(b.dataset.v===v)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current");});
-  R[v]();window.scrollTo(0,0);
+  R[v]();window.scrollTo(0,0);vin($("v-"+v));
   if(v==="entreno"){var first=document.querySelector("#exlist .ex:not(.complete)");if(first&&doneSets(TODAY)>0)first.scrollIntoView({block:"center"});}
 }
 $("hero").addEventListener("click",function(e){

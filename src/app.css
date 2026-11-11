@@ -842,3 +842,20 @@ label.btn{position:relative;cursor:pointer}
 .wsum{display:grid;gap:10px;margin:0 0 4px}
 .wsum .stat b small{font-size:.9rem;color:var(--muted)}
 .wsum p{margin:0}
+
+/* animaciones discretas: entrada al cambiar de sección o de día, toque en botones y paneles que se abren */
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.vin>*,.vin #exlist>*,.vin .tl>.ti{animation:fadeUp .38s cubic-bezier(.2,.8,.2,1) both}
+.vin>:nth-child(2),.vin #exlist>:nth-child(2),.vin .tl>.ti:nth-child(2){animation-delay:.04s}
+.vin>:nth-child(3),.vin #exlist>:nth-child(3),.vin .tl>.ti:nth-child(3){animation-delay:.08s}
+.vin>:nth-child(4),.vin #exlist>:nth-child(4),.vin .tl>.ti:nth-child(4){animation-delay:.12s}
+.vin>:nth-child(5),.vin #exlist>:nth-child(5),.vin .tl>.ti:nth-child(5){animation-delay:.16s}
+.vin>:nth-child(6),.vin #exlist>:nth-child(6),.vin .tl>.ti:nth-child(6){animation-delay:.2s}
+.vin>:nth-child(n+7),.vin #exlist>:nth-child(n+7),.vin .tl>.ti:nth-child(n+7){animation-delay:.24s}
+.btn,.chip,.wd,.medb,.rodb button,.seg button{transition:transform .12s ease,background-color .15s,border-color .15s,color .15s}
+.btn:active,.chip:active,.wd:active,.medb:active,.rodb button:active,.seg button:active{transform:scale(.97)}
+.set .go.pop{animation:pop .3s ease}
+.meal-b:not([hidden]),.mrow:not([hidden]){animation:fadeIn .22s ease}
+.ex.complete{transition:border-color .25s,box-shadow .4s}
+@media (prefers-reduced-motion:reduce){.vin>*,.vin #exlist>*,.vin .tl>.ti,.set .go.pop,.meal-b,.mrow{animation:none!important}.btn:active,.chip:active,.wd:active,.medb:active,.rodb button:active,.seg button:active{transform:none}}
