@@ -493,6 +493,9 @@ button.pill{appearance:none;background:transparent;cursor:pointer;font-family:va
 .meal.sup{border-style:dashed}
 .meal.sup.done{border-style:solid;border-color:color-mix(in srgb,var(--d-jue) 50%,var(--line))}
 .meal.sup .chk:checked{background:var(--d-jue);border-color:var(--d-jue)}
+.meal.sup.caf .meal-h .k .eyebrow{color:var(--c-lg)}
+.meal.sup.caf.done{border-color:color-mix(in srgb,var(--c-lg) 50%,var(--line))}
+.meal.sup.caf .chk:checked{background:var(--c-lg);border-color:var(--c-lg)}
 .ti.done .dot{background:var(--ic)}
 
 /* batido opcional */
