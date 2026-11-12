@@ -73,7 +73,7 @@
     ["Proteína",["Pechuga de pollo sin piel, 500 g","Queso panela, 500 g","Pierna con muslo sin piel, 4 piezas","Res molida 90/10, 500 g","Lomo de cerdo, 100 g (o más pechuga)","Atún en agua, 4 latas (2 de reserva)","Queso mozzarella, 100 g"]],
     ["Cereales y tubérculos",["Arroz, 1 kg","Papa mediana, 2 kg (≈ 12)","Tortilla de maíz, 1.5 kg","Tortillas de harina chicas, 1 paquete","Pan de caja integral, 1 paquete","Avena en hojuela, 300 g"]],
     ["Leguminosas",["Frijol seco, 750 g (o 6 bolsas cocidos)"]],
-    ["Leche y fruta",["Leche descremada o deslactosada light, 4 L","Plátanos, 16 (mitad verdes, mitad maduros)","Manzanas, 3"]],
+    ["Leche y fruta",["Leche descremada o deslactosada light, 4 L","Plátanos, 16 (mitad verdes, mitad maduros)","Manzanas, 3","Café (molido o soluble)"]],
     ["Verduras",["Zanahoria, 4","Calabacita, 4","Chayote, 1","Cebolla, 3","Jitomate, 4","Jitomate triturado, 1 lata de 800 g","Pimiento, 2","Ejotes, 250 g","Verduras mixtas congeladas, 2 bolsas","Ajo, limones, cilantro"]],
     ["Grasas, azúcares y sazón",["Crema de cacahuate natural, 1 frasco","Cacahuates naturales, 1 bolsa","Aceite de canola u oliva","Miel o mermelada","Chile en polvo o guajillo, comino, orégano, paprika","Chipotle en lata, salsa de soya, salsa roja sin aguacate"]]]},
 
@@ -113,7 +113,7 @@
     ["Proteína",["Pechuga de pollo sin piel, 1.1 kg","Res molida 90/10, 500 g","Bistec de res, 100 g","Atún en agua, 4 latas (2 de reserva)","Queso mozzarella, 100 g"]],
     ["Cereales y tubérculos",["Arroz, 1 kg","Papa mediana, 2 kg (incluye las de las croquetas)","Tortilla de maíz, 1 kg","Tortillas de harina grandes, 1 paquete","Tortillas de harina chicas, 1 paquete","Pan de caja integral, 1 paquete","Avena en hojuela, 300 g","Fideo, 1 paquete"]],
     ["Leguminosas",["Frijol seco, 500 g (o 4 bolsas cocidos)"]],
-    ["Leche y fruta",["Leche descremada o deslactosada light, 4 L","Plátanos, 16","Manzanas, 3","Cocoa sin azúcar y canela"]],
+    ["Leche y fruta",["Leche descremada o deslactosada light, 4 L","Plátanos, 16","Manzanas, 3","Cocoa sin azúcar y canela","Café (molido o soluble)"]],
     ["Verduras",["Jitomate, 12","Cebolla, 5","Zanahoria, 5","Calabacita, 5","Verduras mixtas congeladas, 2 bolsas","Ajo, chiles, limones"]],
     ["Grasas, azúcares y sazón",["Crema de cacahuate natural (si se acabó)","Cacahuates naturales","Aceite de canola u oliva","Miel o mermelada","Chipotle en lata, comino, salsa roja sin aguacate"]]]},
 
@@ -153,7 +153,7 @@
     ["Proteína",["Pechuga de pollo sin piel, 1.1 kg","Res molida 90/10, 500 g","Bistec de res, 100 g","Atún en agua, 4 latas (2 de reserva)","Queso mozzarella, 100 g"]],
     ["Cereales y tubérculos",["Arroz, 1 kg","Papa mediana, 2 kg (incluye las de las croquetas)","Tortilla de maíz, 1 kg","Tortillas de harina grandes, 1 paquete","Tortillas de harina chicas, 1 paquete","Pan de caja integral, 1 paquete","Avena en hojuela, 350 g (incluye la de las albóndigas)"]],
     ["Leguminosas",["Lentejas, 500 g","Frijoles refritos, 1 bolsa (para los burritos)"]],
-    ["Leche y fruta",["Leche descremada o deslactosada light, 4 L","Plátanos, 12","Mangos, 4","Manzanas, 3"]],
+    ["Leche y fruta",["Leche descremada o deslactosada light, 4 L","Plátanos, 12","Mangos, 4","Manzanas, 3","Café (molido o soluble)"]],
     ["Verduras",["Tomate verde, 1 kg","Chile serrano, 4","Cilantro, 1 manojo","Jitomate, 8","Cebolla, 4","Zanahoria, 2","Calabacita, 2","Pimiento, 2","Nopales, 3 piezas","Cebollitas cambray, 1 manojo","Verduras mixtas congeladas, 1 bolsa"]],
     ["Grasas, azúcares y sazón",["Crema de cacahuate natural (si se acabó)","Cacahuates naturales","Aceite de canola u oliva","Miel o mermelada","Chipotle en lata, comino, salsa roja sin aguacate"]]]},
 
@@ -192,7 +192,7 @@
     ["Proteína",["Pechuga de pollo sin piel, 1.2 kg","Pulpa o chambarete de res magro, 400 g","Bistec de res, 100 g","Filete de tilapia, 1 (≈ 120 g)","Atún en agua, 3 latas (2 de reserva)","Queso mozzarella, 50 g"]],
     ["Cereales y tubérculos",["Arroz, 1 kg","Papa mediana, 2 kg (incluye las de las croquetas)","Tortilla de maíz, 1 kg","Tortillas de harina grandes, 1 paquete","Tortillas de harina chicas, 1 paquete","Pan de caja integral, 1 paquete","Avena en hojuela, 300 g"]],
     ["Leguminosas",["Frijoles enteros cocidos, 3 bolsas"]],
-    ["Leche y fruta",["Leche descremada o deslactosada light, 4 L","Plátanos, 16 (congela 7 pelados para el frappé)","Manzanas, 3","Café"]],
+    ["Leche y fruta",["Leche descremada o deslactosada light, 4 L","Plátanos, 16 (congela 7 pelados para el frappé)","Manzanas, 3","Café (molido o soluble)"]],
     ["Verduras",["Chile poblano, 1 (o cilantro, 2 manojos)","Zanahoria, 3","Calabacita, 4","Chayote, 1","Ejotes, 250 g","Jitomate, 8","Cebolla, 4","Chile serrano, 3","Limones","Verduras mixtas congeladas, 2 bolsas"]],
     ["Grasas, azúcares y sazón",["Crema de cacahuate natural (si se acabó)","Cacahuates naturales","Aceite de canola u oliva","Miel o mermelada","Paprika, ajo en polvo, comino","Papel aluminio, salsa roja sin aguacate"]]]}
   ];
