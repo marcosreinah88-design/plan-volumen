@@ -72,7 +72,6 @@ var ICON={swap:'<path d="M7 7h11l-3-3M17 17H6l3 3" fill="none" stroke="currentCo
 };
 function ic(n){return '<svg viewBox="0 0 24 24" aria-hidden="true">'+ICON[n]+'</svg>';}
 ICON.batch=ICON.meal;
-ICON.caf='<path d="M4.5 9.5h12v5a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5z"/><path d="M16.5 11h1.5a2.5 2.5 0 0 1 0 5h-1.6"/><path d="M8.5 3.5c-.8 1 .8 2 0 3M12.5 3.5c-.8 1 .8 2 0 3"/>';
 ICON.cre='<rect x="2.6" y="8.6" width="18.8" height="6.8" rx="3.4" transform="rotate(-40 12 12)"/><path d="M9.6 9.1l4.8 5.8"/>';
 var toastT=0;
 function toast(msg){var t=$("toast");t.textContent=msg;t.classList.add("on");clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove("on");},2600);}
@@ -108,6 +107,7 @@ function sanDoc(k,v){
     if(o.s)Object.keys(o.s).forEach(function(id){if(!Array.isArray(o.s[id]))delete o.s[id];});
     if(o.rod!=null&&!(typeof o.rod==="number"&&o.rod===Math.floor(o.rod)&&o.rod>=0&&o.rod<=10))delete o.rod;
     if(o.fin!=null&&o.fin!==0&&o.fin!==1)delete o.fin;
+    if(o.cf!=null&&!(typeof o.cf==="number"&&o.cf===Math.floor(o.cf)&&o.cf>=0&&o.cf<=20))delete o.cf;
   }
   if(k==="weights")o.e=Array.isArray(o.e)?o.e.filter(function(r){return Array.isArray(r)&&typeof r[0]==="string"&&/^\d{4}-\d\d-\d\d$/.test(r[0])&&typeof r[1]==="number"&&r[1]>20&&r[1]<400;}):[];
   if(k==="cfg"&&o.bw!=null&&o.bw!=="kg"&&o.bw!=="lb")delete o.bw;
@@ -166,6 +166,7 @@ function mergeDay(a,b){
     var n=out.s[id];for(var j=0;j<o.length;j++){if(!rowDone(n[j])&&rowDone(o[j]))n[j]=cp(o[j]);}
   });
   out.w=Math.max(a.w||0,b.w||0);if(a.ml!=null||b.ml!=null){out.ml=(nw.ml!=null?nw.ml:ol.ml);}
+  if(a.cf!=null||b.cf!=null){out.cf=(nw.cf!=null?nw.cf:ol.cf);}
   if(!out.ss&&ol.ss){out.ss=ol.ss;if(ol.se)out.se=ol.se;}
   else if(out.ss&&ol.ss&&ol.ss<out.ss)out.ss=ol.ss;
   if(ol.lt&&(!out.lt||ol.lt>out.lt))out.lt=ol.lt;
@@ -436,8 +437,6 @@ function dayItems(d){
   var k=KEYS[d.getDay()],DY=DAYS[d.getDay()],hr=HRS[DY.h],it=[];
   (CLS[k]||[]).forEach(function(c){it.push({type:"cls",s:mins(c[0]),e:mins(c[1]),t:c[2],a:c[0],b:c[1]});});
   ORDER.forEach(function(m){var s=mins(hr[m]);it.push({type:"meal",k:m,s:s,e:s+30,a:hr[m]});});
-  /* café de la mañana (12 nov 2026): opcional, no cuenta para comidas, rachas ni medallas */
-  it.push({type:"caf",s:mins(hr.des)+2,e:mins(hr.des)+32,a:hr.des});
   var GM=GMat(d),cl=gymClosed(d),ge=GD[k]&&!cl?mins(GYMT[k])+GM[k]:null;
   if(ge!=null)it.push({type:"cre",s:ge,e:ge+30,a:hm(ge),post:true});
   else it.push({type:"cre",s:mins(hr.des)+1,e:mins(hr.des)+31,a:hr.des});
@@ -453,7 +452,6 @@ function itemTitle(d,x){
   if(x.type==="cls")return [x.t,x.a+"–"+x.b];
   if(x.type==="meal"){var o=mealOpts(d,x.k)[0];return [mealName(d,x.k)+": "+o.t,T[x.k].kcal+" kcal · "+T[x.k].p+" g de proteína"];}
   if(x.type==="gym"){if(x.cl)return ["Gimnasio cerrado","No cuenta en tu racha"];var gg=GDat(d)[x.k]||GD[x.k];return ["Entreno: "+gg.t,gg.tm];}
-  if(x.type==="caf")return ["Café de la mañana",cafFrap(d)?"Hoy ya viene en tu frappé":"Opcional · sin azúcar, 0 kcal"];
   if(x.type==="cre")return ["Creatina · 5 g",x.post?"Al terminar el entreno, en agua o en tu batido":"Con el desayuno, en el licuado o en agua"];
   if(x.type==="bat")return ["Batido de proteína (opcional)","≈"+BAT.kcal+" kcal · "+BAT.p+"–24 g de proteína"];
   if(x.type==="prep")return ["Prep para el jueves","20 minutos antes de dormir"];
@@ -465,9 +463,9 @@ function renderNext(){
   var d=TODAY,its=dayItems(d),n=nowMin(),dd=dayDoc(d),cur=null,nx=null,due=null;
   its.forEach(function(x){
     if(x.type==="cre"&&x.post&&!dd.m.cre&&x.s<=n&&n<x.s+120)due=x;
-    if(x.type==="bat"||x.type==="caf"||x.cl)return;
-    var done=(x.type==="meal"&&dd.m[x.k])||(x.type==="cre"&&dd.m.cre)||(x.type==="caf"&&dd.m.caf);
-    if(!cur&&x.type!=="meal"&&x.type!=="cre"&&x.type!=="caf"&&x.s<=n&&n<x.e)cur=x;
+    if(x.type==="bat"||x.cl)return;
+    var done=(x.type==="meal"&&dd.m[x.k])||(x.type==="cre"&&dd.m.cre);
+    if(!cur&&x.type!=="meal"&&x.type!=="cre"&&x.s<=n&&n<x.e)cur=x;
     if(!nx&&x.s>n&&!done)nx=x;
   });
   var x,lab,cd,cdl,dday=d;
@@ -476,8 +474,8 @@ function renderNext(){
   else if(nx){x=nx;lab="Siguiente · "+nx.a;cd=dur(nx.s-n);cdl="Faltan";}
   else if(cur){x=cur;lab="Ahora";cd=dur(cur.e-n);cdl="Termina en";}
   else{dday=addD(d,1);var t=dayItems(dday);x=t[0];lab="Mañana · "+x.a;cd="";cdl="";}
-  var tt=itemTitle(dday,x),col=x.type==="gym"?"var(--gym)":x.type==="cls"?"var(--muted)":x.type==="cre"?"var(--d-jue)":x.type==="caf"?"var(--c-lg)":"var(--food)";
-  box.innerHTML='<div class="next" style="--nc:'+col+'"><div class="ico">'+ic(x.type==="cls"?"cls":x.type==="gym"?"gym":x.type==="prep"?"prep":x.type==="cre"?"cre":x.type==="caf"?"caf":"meal")+'</div><div class="t"><span class="eyebrow">'+lab+'</span><b>'+tt[0]+'</b><span>'+tt[1]+'</span></div>'+(cd?'<div class="cd">'+cd+'<small>'+cdl+'</small></div>':'')+'</div>';
+  var tt=itemTitle(dday,x),col=x.type==="gym"?"var(--gym)":x.type==="cls"?"var(--muted)":x.type==="cre"?"var(--d-jue)":"var(--food)";
+  box.innerHTML='<div class="next" style="--nc:'+col+'"><div class="ico">'+ic(x.type==="cls"?"cls":x.type==="gym"?"gym":x.type==="prep"?"prep":x.type==="cre"?"cre":"meal")+'</div><div class="t"><span class="eyebrow">'+lab+'</span><b>'+tt[0]+'</b><span>'+tt[1]+'</span></div>'+(cd?'<div class="cd">'+cd+'<small>'+cdl+'</small></div>':'')+'</div>';
 }
 function creStreak(){var n=0,d=TODAY,v=sget(dk(d));if(!(v&&v.m&&v.m.cre))d=addD(d,-1);while(n<500){v=sget(dk(d));if(!(v&&v.m&&v.m.cre))break;n++;d=addD(d,-1);}return n;}
 function creBlock(d){
@@ -487,15 +485,6 @@ function creBlock(d){
     '<input type="checkbox" class="chk" data-meal="cre"'+(dd.m.cre?' checked':'')+(fut?' disabled title="Aún no llega este día"':locked(d)?' disabled title="Semana pasada: solo para ver"':'')+' aria-label="Marcar creatina como tomada"></div>'+
     '<div class="meal-b"'+(op?'':' hidden')+'><div class="dish"><p>'+(gd?'5 g al terminar el entreno, en un vaso de agua o dentro de tu batido de proteína. El domingo, que no hay gym, tómala con el desayuno.':'Hoy no hay gym: 5 g con el desayuno, en el licuado o en un vaso de agua. En los días de descanso también se toma.')+' Revisa la etiqueta: casi todos los botes traen un scoop de 5 g.</p>'+
     '<p class="tip">Tomarla después de entrenar te ayuda a no olvidarla; lo que más cuenta es no saltarte ningún día. No hace falta fase de carga: con la dosis diaria el músculo se satura en unas 4 semanas. En esas semanas la báscula puede subir un poco más rápido; es agua dentro del músculo, no grasa. Si te sacan química sanguínea, avisa que la tomas: sube un poco la creatinina sin que signifique daño renal.</p></div></div></article>';
-}
-/* el Menú 4 ya trae café en el frappé del desayuno */
-function cafFrap(d){var o=mealOpts(d,"des")[0];return !!(o&&/café/i.test(o.t));}
-function cafBlock(d){
-  var dd=dayDoc(d),fut=ddiff(d,TODAY)>0,id=iso(d)+"caf",op=!!openMeal[id],fr=cafFrap(d);
-  return '<article class="meal opt caf'+(dd.m.caf?' done':'')+'"><div class="meal-h"><button type="button" class="k" data-tog="'+id+'" aria-expanded="'+op+'"><span class="eyebrow">Opcional</span><b>Café de la mañana</b><span>0 kcal sin azúcar · no cambia tus equivalentes</span><span class="hn">'+(fr?'hoy ya viene en tu frappé':'con el desayuno, si se te antoja')+'</span></button>'+
-    '<input type="checkbox" class="chk" data-meal="caf"'+(dd.m.caf?' checked':'')+(fut?' disabled title="Aún no llega este día"':locked(d)?' disabled title="Semana pasada: solo para ver"':'')+' aria-label="Marcar café como tomado"></div>'+
-    '<div class="meal-b"'+(op?'':' hidden')+'><div class="dish"><p>'+(fr?'Tu frappé del desayuno ya lleva el shot de café: con eso cuenta. Si quieres otra taza, que sea sola.':'1 taza (240 ml) de café americano, de olla o soluble, solo o con endulzante sin calorías. Así es alimento libre en el SMAE y no mueve tus '+fmt.format(KCAL)+' kcal.')+'</p>'+
-    '<p class="tip">¿Le pones leche o azúcar? Sácala de tu desayuno para no sumar: ½ taza de las 2 de leche del licuado, o 2 cditas de azúcar en lugar de las 2 de miel (es el mismo equivalente). Hasta 3–4 tazas al día está bien; después de las 2 de la tarde puede quitarte el sueño, y el sueño también hace músculo.</p></div></div></article>';
 }
 function batBlock(d){
   var dd=dayDoc(d),fut=ddiff(d,TODAY)>0,id=iso(d)+"bat",op=!!openMeal[id],k=KEYS[d.getDay()];
@@ -532,7 +521,6 @@ function renderTimeline(){
     var gone=past||(isT&&x.e<=n);
     if(x.type==="cls"){h+='<div class="ti cls'+(gone?' past':'')+'"><div class="tm">'+x.a+'</div><div class="rail"><span class="dot"></span></div><div class="bd"><div class="cls-b"><b>'+x.t+'</b><span class="mono">'+x.a+'–'+x.b+'</span></div></div></div>';return;}
     if(x.type==="bat"){h+='<div class="ti'+(dd.m.bat?' done':'')+(gone?' past':'')+'" style="--ic:var(--ok)"><div class="tm">'+x.a+(x.post?'<small>al terminar</small>':'')+'</div><div class="rail"><span class="dot"></span></div><div class="bd">'+batBlock(d)+'</div></div>';return;}
-    if(x.type==="caf"){h+='<div class="ti'+(dd.m.caf?' done':'')+(gone?' past':'')+'" style="--ic:var(--c-lg)"><div class="tm">'+x.a+'</div><div class="rail"><span class="dot"></span></div><div class="bd">'+cafBlock(d)+'</div></div>';return;}
     if(x.type==="cre"){h+='<div class="ti'+(dd.m.cre?' done':'')+(gone?' past':'')+'" style="--ic:var(--d-jue)"><div class="tm">'+x.a+(x.post?'<small>al terminar</small>':'')+'</div><div class="rail"><span class="dot"></span></div><div class="bd">'+creBlock(d)+'</div></div>';return;}
     if(x.type==="meal"){h+='<div class="ti'+(dd.m[x.k]?' done':'')+(gone?' past':'')+'" style="--ic:var(--food)"><div class="tm">'+x.a+'</div><div class="rail"><span class="dot"></span></div><div class="bd">'+mealBlock(d,x.k)+'</div></div>';return;}
     if(x.type==="gym"&&x.cl){h+='<div class="ti gcl'+(gone?' past':'')+'" style="--ic:var(--muted)"><div class="tm">'+x.a+'<small>cerrado</small></div><div class="rail"><span class="dot"></span></div><div class="bd">'+gymClosedBlock(d,x.k)+'</div></div>';return;}
@@ -567,6 +555,9 @@ function jugSVG(ml){
     '<path class="jshine" d="M30 42 C25 62 25 98 31 122"/><path class="jshine s2" d="M38 34 C36 40 35 46 35 52"/>'+
     spill+'</svg><span class="jl"><b>'+(over?'+'+fmt.format(extra):fmt.format(ml))+'</b> '+(over?'ml de más':'ml')+'</span></div>';
 }
+/* tazas de café del día (opcional, solo registro; 12 nov 2026). dd.m.caf viene de la tarjeta vieja = 1 taza */
+function cafN(dd){return dd.cf!=null?dd.cf:(dd.m&&dd.m.caf?1:0);}
+function addCaf(v){var dd=dayDoc(selDay),n=Math.max(0,Math.min(20,cafN(dd)+v));dd.cf=n;if(dd.m)delete dd.m.caf;dd._auth=Date.now();saveDay(selDay);renderHabits();if(v>0)toast(n===1?"Primer café del día":"Llevas "+n+" cafés hoy");}
 function waterMl(dd){return dd.ml!=null?dd.ml:(dd.w||0)*375;}
 var WGOAL=3000;
 /* medicamento de la mañana: se guarda en el día como la hora en que lo marcaste */
@@ -601,6 +592,11 @@ function renderHabits(){
     '<div class="wadd">'+[250,500,750,1000].map(function(v){return '<button type="button" class="btn ghost sm" data-ml="'+v+'"'+dis+'>+'+fmt.format(v)+'</button>';}).join("")+'</div>'+
     '<form class="wcus" id="wcus"><input type="number" inputmode="numeric" step="1" min="1" max="5000" id="wmli" placeholder="Otra cantidad" aria-label="Mililitros de agua"'+dis+'><span>ml</span><button class="btn ghost sm" type="submit"'+dis+'>Sumar</button><button class="btn ghost sm" type="button" data-ml="-250"'+(dis||!ml?' disabled':'')+' aria-label="Quitar 250 ml">−250</button></form></div>'+jugSVG(ml)+'</div>'+
     '<p class="small muted">Meta: 3,000 ml. En días de pierna, 300 a 700 ml más.</p>';
+  var cf=cafN(dd);
+  hb+='<div class="cafe"><div class="sec-h" style="gap:8px"><h3 style="font-size:1rem">Café</h3><span class="r small muted">opcional · solo registro</span></div>'+
+    '<div class="cfrow"><div class="cfcups" aria-label="'+cf+' tazas de café">'+(cf?'<span aria-hidden="true">'+new Array(cf+1).join("☕")+'</span>':'<span class="small muted">Ninguna taza hoy</span>')+'</div>'+
+    '<div class="cfbtn"><button type="button" class="btn ghost sm" data-cf="-1"'+(dis||!cf?' disabled':'')+' aria-label="Quitar una taza">−</button><button type="button" class="btn ghost sm" data-cf="1"'+(dis||cf>=20?' disabled':'')+' aria-label="Sumar una taza">+ ☕</button></div></div>'+
+    '<p class="small muted">Sin azúcar no cambia tu dieta. Después de las 2 de la tarde puede quitarte el sueño.</p></div>';
   $("habits").innerHTML=hb;
 }
 /* ===== resumen de la semana: domingo (esta semana) y lunes (la que acaba de pasar) ===== */
@@ -656,12 +652,12 @@ $("tl").addEventListener("change",function(e){
   var art=c.closest(".meal");art.classList.toggle("done",c.checked);art.closest(".ti").classList.toggle("done",c.checked);
   if(c.checked){c.classList.add("pop");setTimeout(function(){c.classList.remove("pop");},400);
     if(c.dataset.meal==="cre"){var st=creStreak();toast(st>1?"Creatina: "+st+" días seguidos":"Creatina tomada");}
-    else if(c.dataset.meal==="caf"){toast("Café tomado");}
     else if(c.dataset.meal==="bat"){toast("Batido: +"+BAT.kcal+" kcal y ≈"+BAT.p+" g de proteína");}
     else{var m=mealsDone(selDay);if(m.n===5)toast("Las 5 comidas del día: "+fmt.format(KCAL)+" kcal y "+PROT+" g de proteína.");}}
   updRings();renderWeek();renderNext();
 });
 $("habits").addEventListener("click",function(e){
+  var c=e.target.closest("[data-cf]");if(c){addCaf(+c.dataset.cf);return;}
   var b=e.target.closest("[data-ml]");if(!b)return;addWater(+b.dataset.ml);
 });
 $("habits").addEventListener("submit",function(e){
@@ -1425,7 +1421,7 @@ function dtipHTML(d){
       return '<li>'+esc((names[id]||id).split(/ \(|,/)[0])+'<span>'+rows.length+'×'+(+top[0]>0?' · '+kgs(+top[0])+' lb':'')+'</span></li>';});
     h+=done.length?'<ul>'+done.join("")+'</ul>':'<p class="mu">No marcaste series.</p>';}
   else h+='<p class="tg rest"><i></i>'+(gymClosed(d)?'Gimnasio cerrado':'Descanso')+'</p>';
-  h+='<p class="tf'+(st.fo?' ok':'')+'"><i></i>Comidas '+m.n+'/5'+(dd.m&&dd.m.cre?' · creatina':'')+(dd.m&&dd.m.caf?' · café':'')+(dd.med?' · medicamento':'')+'</p>';
+  h+='<p class="tf'+(st.fo?' ok':'')+'"><i></i>Comidas '+m.n+'/5'+(dd.m&&dd.m.cre?' · creatina':'')+(cafN(dd)?' · '+cafN(dd)+' café'+(cafN(dd)>1?'s':''):'')+(dd.med?' · medicamento':'')+'</p>';
   return h;
 }
 function dtipShow(el){var t=$("dtip");if(!t){t=document.createElement("div");t.id="dtip";t.setAttribute("role","tooltip");document.body.appendChild(t);}
