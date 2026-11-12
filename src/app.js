@@ -436,7 +436,7 @@ function dayItems(d){
   var k=KEYS[d.getDay()],DY=DAYS[d.getDay()],hr=HRS[DY.h],it=[];
   (CLS[k]||[]).forEach(function(c){it.push({type:"cls",s:mins(c[0]),e:mins(c[1]),t:c[2],a:c[0],b:c[1]});});
   ORDER.forEach(function(m){var s=mins(hr[m]);it.push({type:"meal",k:m,s:s,e:s+30,a:hr[m]});});
-  /* café diario (pedido el 12 nov 2026): con el desayuno, todos los días */
+  /* café de la mañana (12 nov 2026): opcional, no cuenta para comidas, rachas ni medallas */
   it.push({type:"caf",s:mins(hr.des)+2,e:mins(hr.des)+32,a:hr.des});
   var GM=GMat(d),cl=gymClosed(d),ge=GD[k]&&!cl?mins(GYMT[k])+GM[k]:null;
   if(ge!=null)it.push({type:"cre",s:ge,e:ge+30,a:hm(ge),post:true});
@@ -453,7 +453,7 @@ function itemTitle(d,x){
   if(x.type==="cls")return [x.t,x.a+"–"+x.b];
   if(x.type==="meal"){var o=mealOpts(d,x.k)[0];return [mealName(d,x.k)+": "+o.t,T[x.k].kcal+" kcal · "+T[x.k].p+" g de proteína"];}
   if(x.type==="gym"){if(x.cl)return ["Gimnasio cerrado","No cuenta en tu racha"];var gg=GDat(d)[x.k]||GD[x.k];return ["Entreno: "+gg.t,gg.tm];}
-  if(x.type==="caf")return ["Café de la mañana",cafFrap(d)?"Hoy ya viene en tu frappé":"Sin azúcar · 0 kcal, no cambia tus equivalentes"];
+  if(x.type==="caf")return ["Café de la mañana",cafFrap(d)?"Hoy ya viene en tu frappé":"Opcional · sin azúcar, 0 kcal"];
   if(x.type==="cre")return ["Creatina · 5 g",x.post?"Al terminar el entreno, en agua o en tu batido":"Con el desayuno, en el licuado o en agua"];
   if(x.type==="bat")return ["Batido de proteína (opcional)","≈"+BAT.kcal+" kcal · "+BAT.p+"–24 g de proteína"];
   if(x.type==="prep")return ["Prep para el jueves","20 minutos antes de dormir"];
@@ -465,7 +465,7 @@ function renderNext(){
   var d=TODAY,its=dayItems(d),n=nowMin(),dd=dayDoc(d),cur=null,nx=null,due=null;
   its.forEach(function(x){
     if(x.type==="cre"&&x.post&&!dd.m.cre&&x.s<=n&&n<x.s+120)due=x;
-    if(x.type==="bat"||x.cl)return;
+    if(x.type==="bat"||x.type==="caf"||x.cl)return;
     var done=(x.type==="meal"&&dd.m[x.k])||(x.type==="cre"&&dd.m.cre)||(x.type==="caf"&&dd.m.caf);
     if(!cur&&x.type!=="meal"&&x.type!=="cre"&&x.type!=="caf"&&x.s<=n&&n<x.e)cur=x;
     if(!nx&&x.s>n&&!done)nx=x;
@@ -492,7 +492,7 @@ function creBlock(d){
 function cafFrap(d){var o=mealOpts(d,"des")[0];return !!(o&&/café/i.test(o.t));}
 function cafBlock(d){
   var dd=dayDoc(d),fut=ddiff(d,TODAY)>0,id=iso(d)+"caf",op=!!openMeal[id],fr=cafFrap(d);
-  return '<article class="meal sup caf'+(dd.m.caf?' done':'')+'"><div class="meal-h"><button type="button" class="k" data-tog="'+id+'" aria-expanded="'+op+'"><span class="eyebrow">Todos los días</span><b>Café de la mañana</b><span>0 kcal sin azúcar · no cambia tus equivalentes</span><span class="hn">'+(fr?'hoy ya viene en tu frappé':'con el desayuno')+'</span></button>'+
+  return '<article class="meal opt caf'+(dd.m.caf?' done':'')+'"><div class="meal-h"><button type="button" class="k" data-tog="'+id+'" aria-expanded="'+op+'"><span class="eyebrow">Opcional</span><b>Café de la mañana</b><span>0 kcal sin azúcar · no cambia tus equivalentes</span><span class="hn">'+(fr?'hoy ya viene en tu frappé':'con el desayuno, si se te antoja')+'</span></button>'+
     '<input type="checkbox" class="chk" data-meal="caf"'+(dd.m.caf?' checked':'')+(fut?' disabled title="Aún no llega este día"':locked(d)?' disabled title="Semana pasada: solo para ver"':'')+' aria-label="Marcar café como tomado"></div>'+
     '<div class="meal-b"'+(op?'':' hidden')+'><div class="dish"><p>'+(fr?'Tu frappé del desayuno ya lleva el shot de café: con eso cuenta. Si quieres otra taza, que sea sola.':'1 taza (240 ml) de café americano, de olla o soluble, solo o con endulzante sin calorías. Así es alimento libre en el SMAE y no mueve tus '+fmt.format(KCAL)+' kcal.')+'</p>'+
     '<p class="tip">¿Le pones leche o azúcar? Sácala de tu desayuno para no sumar: ½ taza de las 2 de leche del licuado, o 2 cditas de azúcar en lugar de las 2 de miel (es el mismo equivalente). Hasta 3–4 tazas al día está bien; después de las 2 de la tarde puede quitarte el sueño, y el sueño también hace músculo.</p></div></div></article>';
@@ -1721,7 +1721,7 @@ function avBuild(){
     var dd=sget(dk(d))||{m:{},s:{}},m=dd.m||{},hr=HRS[DAYS[d.getDay()].h],id=iso(d);
     var add=function(min,tag,t,b){var c=/^(des|col|com|pre|cen)$/.test(tag)?"meal":(tag==="batch"||tag==="prep")?"cocina":tag;if(!avCatOn(c))return;var x=+d+min*60000;if(x>now)out.push({at:x,tag:id+"-"+tag,t:t,b:b});};
     dayItems(d).forEach(function(x){
-      if(x.type==="meal"&&!m[x.k]){var tt=itemTitle(d,x);add(x.s,x.k,mealName(d,x.k)+" · "+x.a,tt[0].replace(/^[^:]*:\s*/,"")+(x.k==="des"&&!m.caf&&!cafFrap(d)?" + café":"")+" · "+tt[1]);}
+      if(x.type==="meal"&&!m[x.k]){var tt=itemTitle(d,x);add(x.s,x.k,mealName(d,x.k)+" · "+x.a,tt[0].replace(/^[^:]*:\s*/,"")+" · "+tt[1]);}
       else if(x.type==="cre"&&!m.cre)add(x.post?x.s:x.s-1,"cre","Creatina · 5 g",x.post?"Al terminar el entreno, en agua o en tu batido":"Con el desayuno");
       else if(x.type==="gym"&&!x.cl&&!doneSets(d)){var g=GDat(d)[x.k]||GD[x.k];add(x.s-30,"gym","En 30 min: "+g.t,"Entreno a las "+x.a+" · "+g.tm);}
       else if(x.type==="prep")add(x.s,"prep","Prep para el jueves","20 minutos antes de dormir");
