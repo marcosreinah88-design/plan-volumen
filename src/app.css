@@ -932,3 +932,13 @@ label.btn{position:relative;cursor:pointer}
 .mdpips i.bro{background:var(--md-bro)}.mdpips i.pla{background:var(--md-pla)}.mdpips i.oro{background:var(--md-oro)}
 @media (prefers-color-scheme: light){:root:not([data-theme="dark"]) .mdl.bro{color:#9A5B28}:root:not([data-theme="dark"]) .mdl.oro{color:#8F6B00}}
 :root[data-theme="light"] .mdl.bro{color:#9A5B28}:root[data-theme="light"] .mdl.oro{color:#8F6B00}
+/* foto del día al terminar el entreno (13 nov 2026) */
+.ftc{display:grid;gap:10px;margin-top:12px}
+.ftc0{grid-template-columns:1fr auto;align-items:center}
+.ftc0 .ftt{display:grid;gap:2px}
+.ftc .btn svg{width:16px;height:16px}
+.ftc label.btn{position:relative;cursor:pointer}
+.ftimg{display:block;width:100%;padding:0;border:0;border-radius:14px;overflow:hidden;background:var(--line);cursor:zoom-in}
+.ftimg img{display:block;width:100%;max-height:420px;object-fit:cover;min-height:120px}
+.lb .ftbig{width:100%;max-height:75vh;object-fit:contain;border-radius:12px;background:#000;display:block}
+@media (max-width:420px){.ftc0{grid-template-columns:1fr}}
