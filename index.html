@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-BYD4dfZ3I/bKUCB9/UzHury/cIrm6+/E0PmRgocTzsA=' 'sha256-zTy0ZjxcjjGgxbevhZcx78LFMUbIS6A47qPJEONL8a0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://gist.githubusercontent.com https://generativelanguage.googleapis.com; manifest-src 'self'; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-BHxl9OXouTb8BZvgg5UfCobeBp7RoDAoirJygHcrl+Q=' 'sha256-zTy0ZjxcjjGgxbevhZcx78LFMUbIS6A47qPJEONL8a0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://gist.githubusercontent.com https://generativelanguage.googleapis.com; manifest-src 'self'; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <!--pv-app-->
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -956,6 +956,16 @@ label.btn{position:relative;cursor:pointer}
 .mdpips i.bro{background:var(--md-bro)}.mdpips i.pla{background:var(--md-pla)}.mdpips i.oro{background:var(--md-oro)}
 @media (prefers-color-scheme: light){:root:not([data-theme="dark"]) .mdl.bro{color:#9A5B28}:root:not([data-theme="dark"]) .mdl.oro{color:#8F6B00}}
 :root[data-theme="light"] .mdl.bro{color:#9A5B28}:root[data-theme="light"] .mdl.oro{color:#8F6B00}
+/* foto del día al terminar el entreno (13 nov 2026) */
+.ftc{display:grid;gap:10px;margin-top:12px}
+.ftc0{grid-template-columns:1fr auto;align-items:center}
+.ftc0 .ftt{display:grid;gap:2px}
+.ftc .btn svg{width:16px;height:16px}
+.ftc label.btn{position:relative;cursor:pointer}
+.ftimg{display:block;width:100%;padding:0;border:0;border-radius:14px;overflow:hidden;background:var(--line);cursor:zoom-in}
+.ftimg img{display:block;width:100%;max-height:420px;object-fit:cover;min-height:120px}
+.lb .ftbig{width:100%;max-height:75vh;object-fit:contain;border-radius:12px;background:#000;display:block}
+@media (max-width:420px){.ftc0{grid-template-columns:1fr}}
 
 </style>
 
@@ -2124,8 +2134,8 @@ function updWoStats(){
   if(n>=tot&&!fin&&sameDay(wd,TODAY)&&sess().st==="on")sessEndLast();
   if(fin&&!roWo())finFix(wd);
   var fh='';
-  if(roWo())fh=n?'<div class="wo-done"><b>'+(n>=tot?'Entreno completo':'Rutina a medias')+'</b><p class="small muted">'+n+(n<tot?' de '+tot:'')+' series y '+fmt.format(Math.round(vol))+' lb movidas.</p></div>'+cmpHTML(k,wd,n>=tot):'';
-  else if(fin)fh='<div class="wo-done"><b>'+(n>=tot?'Entreno completo':'Rutina terminada')+'</b><p class="small muted">'+n+(n<tot?' de '+tot:'')+' series y '+fmt.format(Math.round(vol))+' lb movidas. Toca tu cena de post-entreno.</p><button class="btn ghost sm" type="button" data-fin="0">Seguir entrenando</button></div>'+cmpHTML(k,wd,n>=tot);
+  if(roWo())fh=n?'<div class="wo-done"><b>'+(n>=tot?'Entreno completo':'Rutina a medias')+'</b><p class="small muted">'+n+(n<tot?' de '+tot:'')+' series y '+fmt.format(Math.round(vol))+' lb movidas.</p></div>'+ftHTML(wd,true)+cmpHTML(k,wd,n>=tot):'';
+  else if(fin)fh='<div class="wo-done"><b>'+(n>=tot?'Entreno completo':'Rutina terminada')+'</b><p class="small muted">'+n+(n<tot?' de '+tot:'')+' series y '+fmt.format(Math.round(vol))+' lb movidas. Toca tu cena de post-entreno.</p><button class="btn ghost sm" type="button" data-fin="0">Seguir entrenando</button></div>'+ftHTML(wd,false)+cmpHTML(k,wd,n>=tot);
   else if(n>=tot)fh='<button class="wo-done wo-tap" type="button" data-fin="1"><b>Entreno completo</b><p class="small muted">'+tot+' series y '+fmt.format(Math.round(vol))+' lb movidas. Toca tu cena de post-entreno.</p><span class="wo-cta">Toca para ver la comparación</span></button>';
   else if(n>0)fh='<button class="btn ghost wo-fin" type="button" data-fin="1">Terminar la rutina aquí ('+n+' de '+tot+' series)</button>';
   $("wofoot").innerHTML=fh;
@@ -2895,7 +2905,7 @@ function bkLast(){try{return +localStorage.getItem("pvmbk:last")||0;}catch(e){re
 function renderBackup(){if(view==="ajustes")renderAjustes();}
 function renderBackupCard(){var el=$("pgbk");if(!el)return;
   var L=bkLast(),n=Object.keys(allDocs()).filter(function(k){return k.indexOf("d-")===0;}).length,old=!L||Date.now()-L>7*864e5;
-  el.innerHTML='<div class="sec-h"><h3 style="font-size:1.05rem">Respaldo</h3><span class="r eyebrow">'+n+' días guardados</span></div><p class="small muted">Tus registros viven en este equipo. Guarda un respaldo cada semana (en Archivos o iCloud) por si cambias de celular o borras la app.</p>'+
+  el.innerHTML='<div class="sec-h"><h3 style="font-size:1.05rem">Respaldo</h3><span class="r eyebrow">'+n+' días guardados</span></div><p class="small muted">Tus registros viven en este equipo. Guarda un respaldo cada semana (en Archivos o iCloud) por si cambias de celular o borras la app. Las fotos del entreno no van en este archivo: pasan de un equipo a otro con la sincronización.</p>'+
     (old?'<p class="note">'+(L?'Tu último respaldo fue el '+new Date(L).getDate()+' '+MES3[new Date(L).getMonth()]+'. Ya toca otro.':'Todavía no tienes respaldo.')+'</p>':'<p class="small" style="color:var(--ok)">Último respaldo: '+new Date(L).getDate()+' '+MES3[new Date(L).getMonth()]+'</p>')+
     '<div class="gbtns"><button class="btn pri" type="button" data-bk="exp">Guardar respaldo</button><label class="btn ghost" style="cursor:pointer">Cargar respaldo<input type="file" accept=".json,application/json" id="bkin" hidden></label></div>'+'';}
 function bkExport(){var D={app:"plan-volumen",v:1,at:new Date().toISOString(),docs:allDocs()},txt=JSON.stringify(D),nm="plan-volumen-respaldo-"+iso(TODAY)+".json";
@@ -2933,7 +2943,7 @@ function ghBoot(){
 }
 function ghOn(){return PWA&&!!GH.tok;}
 function ghApi(path,method,body){
-  if(!/^\/gists(\/[0-9a-f]{20,40})?(\?per_page=100)?$/.test(path))return Promise.reject(new Error("ruta"));
+  if(!/^\/gists(\/[0-9a-f]{20,40})?(\?per_page=100(&since=\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ)?(&page=\d{1,2})?)?$/.test(path))return Promise.reject(new Error("ruta"));
   return fetch("https://api.github.com"+path,{method:method||"GET",cache:"no-store",credentials:"omit",referrerPolicy:"no-referrer",headers:{"Authorization":"Bearer "+GH.tok,"Accept":"application/vnd.github+json","Content-Type":"application/json"},body:body?JSON.stringify(body):undefined})
     .then(function(r){if(!r.ok){var e=new Error("gh "+r.status);e.status=r.status;throw e;}return r.json();});
 }
@@ -2978,8 +2988,11 @@ function ghFind(){
   var id=ghGet("id");
   if(id&&!/^[0-9a-f]{20,40}$/.test(id)){ghSet("id","");id="";}
   if(id)return ghApi("/gists/"+id).catch(function(e){if(e.status===404){ghSet("id","");return ghFind();}throw e;});
-  return ghApi("/gists?per_page=100").then(function(list){
+  /* busca por páginas: los gists de fotos (uno por semana) pueden empujar el de registros fuera de la primera */
+  var pg=function(n){return ghApi("/gists?per_page=100&page="+n).then(function(list){
     var g=(list||[]).filter(function(x){return x&&x.files&&(x.files[GH.fenc]||x.files[GH.fname])&&/^[0-9a-f]{20,40}$/.test(x.id||"");})[0];
+    if(!g&&list&&list.length===100&&n<20)return pg(n+1);return g||null;});};
+  return pg(1).then(function(g){
     if(g){ghSet("id",g.id);return ghApi("/gists/"+g.id);}
     return ghSeal(allDocs()).then(function(c){var files={};files[GH.fenc]={content:c};
       return ghApi("/gists","POST",{description:GH.desc,public:false,files:files});}).then(function(n){ghSet("id",n.id);return n;});
@@ -3011,7 +3024,7 @@ function ghSync(manual){
       if(!Object.keys(files).length)return changed;
       return ghApi("/gists/"+ghGet("id"),"PATCH",{files:files}).then(function(){return changed;});});
   }).then(function(changed){
-    GH.busy=0;GH.err="";GH.dec=0;ghSet("last",String(Date.now()));setSync("on");
+    GH.busy=0;GH.err="";GH.dec=0;ghSet("last",String(Date.now()));setSync("on");ftSoon();
     if(changed){var a=document.activeElement;if(!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)))renderAll();}
     else if(view==="ajustes")renderBackup();
     if(manual)toast("Sincronizado");
@@ -3103,15 +3116,183 @@ function ghCard(){
 }
 document.addEventListener("submit",function(e){if(e.target.id!=="ghf")return;e.preventDefault();var v=($("ghtok").value||"").trim();
   if(!/^(ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{50,100})$/.test(v)){toast("Esa no parece una clave de GitHub (empieza con ghp_)");return;}
-  $("ghtok").value="";ghSet("tok",v);ghSet("id","");GH.err="";GH.dec=0;renderBackup();ghSync(true);});
+  $("ghtok").value="";ghSet("tok",v);ghSet("id","");ftReset();GH.err="";GH.dec=0;renderBackup();ghSync(true);});
 document.addEventListener("click",function(e){var b=e.target.closest("[data-gh]");if(!b)return;
   if(b.dataset.gh==="now")ghSync(true);
   else if(b.dataset.gh==="reset"){if(b.dataset.arm!=="1"){b.dataset.arm="1";b.textContent="¿Seguro? Lo de GitHub se reemplaza. Toca otra vez";return;}
     var id=ghGet("id");if(!id)return;ghSeal(allDocs()).then(function(c){var f={};f[GH.fenc]={content:c};f[GH.fname]=null;return ghApi("/gists/"+id,"PATCH",{files:f});}).then(function(){GH.dec=0;GH.err="";ghSync(true);},function(){toast("No se pudo. Revisa tu internet");});}
-  else if(b.dataset.gh==="off"){ghSet("tok","");ghSet("id","");ghSet("last","");GH.err="";setSync("local");renderBackup();toast("Desconectado. Tus registros siguen en este equipo");}});
+  else if(b.dataset.gh==="off"){ghSet("tok","");ghSet("id","");ftReset();ghSet("last","");GH.err="";setSync("local");renderBackup();toast("Desconectado. Tus registros siguen en este equipo");}});
 document.addEventListener("visibilitychange",function(){if(!document.hidden&&ghOn())ghSync();});
 window.addEventListener("online",function(){if(ghOn())ghSync();});
 setInterval(function(){if(!document.hidden&&ghOn())ghSync();},120000);
+
+/* ================= foto del día al terminar el entreno (13 nov 2026) =================
+   Opcional: al terminar la rutina puedes tomarte o subir una foto como evidencia del día.
+   - Se achica (máx. 1280 px, JPEG ~100–200 KB) y al pasar por el canvas pierde los datos EXIF (ubicación GPS, modelo del cel).
+   - En el equipo vive en IndexedDB (pv-fotos): "meta" = {d,t,del,up} y "img" = bytes del JPEG. No va en localStorage ni en el respaldo .json.
+   - Sincroniza en gists secretos aparte, uno por semana (plan-volumen-fotos-AAAA-MM-DD.cifrado.json, lunes de esa semana), para no inflar
+     el gist de registros. Cada foto va cifrada sola con la misma llave AES-GCM de tus registros; el día y la hora (t) van en los datos
+     autenticados, así que mover o cambiar una foto la invalida. Gana la versión con t más nuevo; quitar una foto deja {t,del:1}. */
+ICON.cam='<path d="M4 8.5h3l1.6-2.5h6.8L17 8.5h3a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13.5" r="3.4"/>';
+var FT={dbP:null,has:{},url:{},ld:{},busy:0,again:0,timer:null,ok:false,pre:"plan-volumen-fotos-",suf:".cifrado.json",MAXB:1048576};
+function ftDB(){
+  if(FT.dbP)return FT.dbP;
+  FT.dbP=new Promise(function(ok,no){
+    try{if(!window.indexedDB){no(new Error("idb"));return;}
+      var r=indexedDB.open("pv-fotos",1);
+      r.onupgradeneeded=function(){var db=r.result;if(!db.objectStoreNames.contains("meta"))db.createObjectStore("meta",{keyPath:"d"});if(!db.objectStoreNames.contains("img"))db.createObjectStore("img");};
+      r.onsuccess=function(){ok(r.result);};r.onerror=function(){no(r.error);};r.onblocked=function(){no(new Error("blocked"));};
+    }catch(e){no(e);}});
+  FT.dbP.catch(function(){FT.dbP=null;});
+  return FT.dbP;
+}
+function ftReq(r){return new Promise(function(ok,no){r.onsuccess=function(){ok(r.result);};r.onerror=function(){no(r.error);};});}
+function ftMetas(){return ftDB().then(function(db){return ftReq(db.transaction("meta").objectStore("meta").getAll());});}
+function ftMeta(d){return ftDB().then(function(db){return ftReq(db.transaction("meta").objectStore("meta").get(d));});}
+function ftBytes(d){return ftDB().then(function(db){return ftReq(db.transaction("img").objectStore("img").get(d));});}
+/* guarda meta + imagen juntas (o borra la imagen si es una baja) */
+function ftWrite(m,bytes){return ftDB().then(function(db){return new Promise(function(ok,no){
+  var tx=db.transaction(["meta","img"],"readwrite");tx.objectStore("meta").put(m);
+  if(bytes)tx.objectStore("img").put(bytes,m.d);else if(m.del)tx.objectStore("img").delete(m.d);
+  tx.oncomplete=function(){ok();};tx.onerror=tx.onabort=function(){no(tx.error);};});});}
+function ftSetUp(list){if(!list.length)return Promise.resolve();return ftDB().then(function(db){return new Promise(function(ok,no){
+  var tx=db.transaction("meta","readwrite"),st=tx.objectStore("meta");
+  list.forEach(function(x){var g=st.get(x.d);g.onsuccess=function(){var m=g.result;if(m&&m.t===x.t){m.up=1;st.put(m);}};});
+  tx.oncomplete=function(){ok();};tx.onerror=tx.onabort=function(){no(tx.error);};});});}
+function ftLoad(){return ftMetas().then(function(L){FT.has={};(L||[]).forEach(function(m){if(m&&!m.del&&typeof m.d==="string")FT.has[m.d]=m.t;});FT.ok=true;
+  if(view==="entreno")updWoStats();},function(){FT.ok=false;});}
+function ftIsJpg(u8){return u8&&u8.length>3&&u8.length<=FT.MAXB&&u8[0]===0xFF&&u8[1]===0xD8&&u8[2]===0xFF;}
+function ftDrop(d){if(FT.url[d]){try{URL.revokeObjectURL(FT.url[d]);}catch(e){}delete FT.url[d];}delete FT.ld[d];}
+/* pide la imagen del día y la pone en las <img data-ftimg> que estén en pantalla */
+function ftShow(d){
+  var paint=function(){document.querySelectorAll('img[data-ftimg="'+d+'"]').forEach(function(im){if(FT.url[d]&&im.getAttribute("src")!==FT.url[d])im.src=FT.url[d];});};
+  if(FT.url[d]){paint();return;}if(FT.ld[d])return;FT.ld[d]=1;
+  ftBytes(d).then(function(b){delete FT.ld[d];var u8=b?new Uint8Array(b):null;if(!ftIsJpg(u8))return;FT.url[d]=URL.createObjectURL(new Blob([u8],{type:"image/jpeg"}));paint();},function(){delete FT.ld[d];});
+}
+/* achica la foto: lado largo 1280 px, JPEG 0.72; si pasa de 260 KB, 1080 px y 0.6 */
+function ftShrink(f){return new Promise(function(ok,no){
+  var u=URL.createObjectURL(f),im=new Image();
+  var enc=function(M,q){return new Promise(function(r2){var k=Math.min(1,M/Math.max(im.naturalWidth,im.naturalHeight)),c=document.createElement("canvas");
+    c.width=Math.max(1,Math.round(im.naturalWidth*k));c.height=Math.max(1,Math.round(im.naturalHeight*k));
+    var g=c.getContext("2d");g.fillStyle="#000";g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);
+    if(c.toBlob)c.toBlob(function(b){r2(b);},"image/jpeg",q);else{var s=c.toDataURL("image/jpeg",q),bin=atob(s.slice(s.indexOf(",")+1)),a=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);r2(new Blob([a],{type:"image/jpeg"}));}});};
+  var buf=function(b){return new Promise(function(r2,n2){var r=new FileReader();r.onload=function(){r2(r.result);};r.onerror=function(){n2(r.error);};r.readAsArrayBuffer(b);});};
+  im.onload=function(){if(!im.naturalWidth){URL.revokeObjectURL(u);no(new Error("img"));return;}
+    enc(1280,0.72).then(function(b){return b&&b.size>266240?enc(1080,0.6):b;}).then(function(b){URL.revokeObjectURL(u);if(!b){no(new Error("enc"));return;}return buf(b).then(ok);}).catch(function(e){URL.revokeObjectURL(u);no(e);});};
+  im.onerror=function(){URL.revokeObjectURL(u);no(new Error("img"));};
+  im.src=u;});}
+function ftAdd(d,file){
+  if(!file)return;if(file.size>40*1048576){toast("Esa foto es demasiado grande");return;}
+  toast("Guardando foto…");
+  ftShrink(file).then(function(ab){var u8=new Uint8Array(ab);if(!ftIsJpg(u8))throw new Error("jpg");
+    var m={d:d,t:Date.now(),up:0};return ftWrite(m,ab).then(function(){ftDrop(d);FT.has[d]=m.t;});})
+  .then(function(){updWoStats();toast("Foto guardada en el "+fromIso(d).getDate()+" "+MES3[fromIso(d).getMonth()]);ftSoon();},
+    function(){toast("No pude leer esa foto. Prueba con otra (JPG o PNG)");});
+}
+function ftDel(d){var m={d:d,t:Date.now(),del:1,up:0};ftWrite(m,null).then(function(){ftDrop(d);delete FT.has[d];updWoStats();toast("Foto quitada");ftSoon();},function(){toast("No se pudo quitar");});}
+/* tarjeta debajo de "Entreno completo": ro = semana pasada (solo ver) */
+function ftHTML(wd,ro){
+  if(!FT.ok)return "";
+  var d=iso(wd),has=!!FT.has[d],when=DAYS[wd.getDay()].n.toLowerCase()+" "+wd.getDate()+" "+MES3[wd.getMonth()];
+  if(!has&&ro)return "";
+  if(has){setTimeout(function(){ftShow(d);},0);
+    return '<div class="card ftc"><div class="sec-h"><h3>Foto del día</h3><span class="r eyebrow">'+when+'</span></div>'+
+      '<button type="button" class="ftimg" data-ftv="'+d+'" aria-label="Ver la foto del '+when+' en grande"><img data-ftimg="'+d+'" alt="Tu foto del entreno del '+when+'"'+(FT.url[d]?' src="'+FT.url[d]+'"':'')+'></button>'+
+      (ro?'':'<div class="gbtns"><label class="btn ghost sm">'+ic("cam")+'Cambiar foto<input type="file" class="fpick" accept="image/*" data-ftin="'+d+'"></label><button type="button" class="btn ghost sm" data-ftdel="'+d+'">Quitar</button></div>')+'</div>';}
+  return '<div class="card ftc ftc0"><div class="ftt"><b>Foto del día</b><span class="small muted">Opcional. Tómate una foto al terminar como evidencia de que viniste; se guarda en el registro de este día.</span></div>'+
+    '<label class="btn pri sm">'+ic("cam")+'Tomar o subir foto<input type="file" class="fpick" accept="image/*" data-ftin="'+d+'"></label></div>';
+}
+function ftOpen(d){
+  var wd=fromIso(d),when=DAYS[wd.getDay()].n.toLowerCase()+" "+wd.getDate()+" de "+MES[wd.getMonth()];
+  lbFrom=document.activeElement;
+  $("lbbox").innerHTML='<div class="h"><h3 id="lbt">Foto del '+esc(when)+'</h3><button class="x" type="button" data-close aria-label="Cerrar">'+ic("x")+'</button></div><img class="ftbig" data-ftimg="'+d+'" alt="Tu foto del entreno del '+esc(when)+'"'+(FT.url[d]?' src="'+FT.url[d]+'"':'')+'>';
+  $("lb").hidden=false;$("lbbox").querySelector("[data-close]").focus();ftShow(d);
+}
+$("wofoot").addEventListener("change",function(e){var t=e.target;if(!t.matches("[data-ftin]")||roWo())return;var d=t.dataset.ftin,f=t.files&&t.files[0];t.value="";
+  if(/^\d{4}-\d\d-\d\d$/.test(d))ftAdd(d,f);});
+$("wofoot").addEventListener("click",function(e){var b=e.target.closest("[data-ftv]");if(b){ftOpen(b.dataset.ftv);return;}
+  b=e.target.closest("[data-ftdel]");if(!b||roWo())return;
+  if(b.dataset.arm!=="1"){b.dataset.arm="1";b.textContent="¿Quitar? Toca otra vez";setTimeout(function(){if(b.isConnected){b.dataset.arm="";b.textContent="Quitar";}},4000);return;}
+  ftDel(b.dataset.ftdel);});
+
+/* ----- sincronizar fotos (gists semanales cifrados) ----- */
+function ftWeek(d){return iso(mondayOf(fromIso(d)));}
+function ftIx(){try{var x=JSON.parse(localStorage.getItem("pvmft:ix")||"null");if(x&&typeof x==="object"&&x.w&&typeof x.w==="object")return x;}catch(e){}return {w:{},since:""};}
+function ftIxSet(x){try{localStorage.setItem("pvmft:ix",JSON.stringify(x));}catch(e){}}
+function ftReset(){try{localStorage.removeItem("pvmft:ix");}catch(e){}}
+function ftAad(d,t){return new TextEncoder().encode("plan-volumen/foto/"+d+"/"+t);}
+function ftSeal(d,t,ab){var iv=crypto.getRandomValues(new Uint8Array(12));
+  return ghKey().then(function(k){return crypto.subtle.encrypt({name:"AES-GCM",iv:iv,additionalData:ftAad(d,t)},k,ab);}).then(function(ct){return {t:t,iv:b64u(iv),ct:b64u(ct)};});}
+function ftOpenItem(d,x){
+  if(typeof x.iv!=="string"||typeof x.ct!=="string"||x.ct.length>1500000)return Promise.reject(new Error("bad"));
+  return ghKey().then(function(k){return crypto.subtle.decrypt({name:"AES-GCM",iv:unb64u(x.iv),additionalData:ftAad(d,x.t)},k,unb64u(x.ct));})
+    .then(function(pt){var u8=new Uint8Array(pt);if(!ftIsJpg(u8))throw new Error("jpg");return pt;});}
+/* lista los gists de fotos: la primera vez todos (por páginas), después solo los que cambiaron desde la última vez */
+function ftList(ix){
+  var out={},page=1,full=!ix.since,since=ix.since,started=new Date(Date.now()-120000).toISOString().replace(/\.\d{3}Z$/,"Z");
+  var re=new RegExp("^"+FT.pre.replace(/[-]/g,"\\-")+"(\\d{4}-\\d\\d-\\d\\d)"+FT.suf.replace(/\./g,"\\.")+"$");
+  function go(){return ghApi("/gists?per_page=100"+(since?"&since="+since:"")+"&page="+page).then(function(L){
+    (L||[]).forEach(function(g){if(!g||!g.files||!/^[0-9a-f]{20,40}$/.test(g.id||""))return;
+      Object.keys(g.files).forEach(function(fn){var m=re.exec(fn);if(!m)return;var w=m[1];
+        if(!out[w]||(g.updated_at||"")>(out[w].upd||""))out[w]={id:g.id,upd:g.updated_at||"",raw:g.files[fn].raw_url||"",fn:fn};});});
+    if(L&&L.length===100&&page<20){page++;return go();}
+    return {w:out,full:full,since:started};});}
+  return go();
+}
+function ftRaw(u){var x;try{x=new URL(u);}catch(e){return Promise.resolve(null);}
+  if(x.protocol!=="https:"||x.hostname!=="gist.githubusercontent.com")return Promise.resolve(null);
+  return fetch(x.href,{cache:"no-store",credentials:"omit",referrerPolicy:"no-referrer"}).then(function(r){return r.ok?r.text():null;});}
+function ftParse(txt,w){
+  if(txt==null)return null;if(txt.length>12*1048576)throw new Error("grande");
+  var C=JSON.parse(txt);if(!C||C.app!=="plan-volumen"||C.kind!=="fotos"||C.w!==w||!C.items||typeof C.items!=="object"||Array.isArray(C.items))throw new Error("formato");
+  var it={};Object.keys(C.items).forEach(function(d){var x=C.items[d];
+    if(!/^\d{4}-\d\d-\d\d$/.test(d)||ftWeek(d)!==w||!x||typeof x!=="object"||typeof x.t!=="number"||!isFinite(x.t)||x.t<=0)return;
+    it[d]=x.del?{t:x.t,del:1}:{t:x.t,iv:x.iv,ct:x.ct};});
+  return it;
+}
+function ftSoon(){if(!ghOn())return;clearTimeout(FT.timer);FT.timer=setTimeout(ftSync,1500);}
+function ftSync(){
+  if(!ghOn()||!FT.ok)return;
+  if(FT.busy){FT.again=1;return;}FT.busy=1;
+  var ix=ftIx(),got=0;
+  Promise.all([ftList(ix),ftMetas()]).then(function(r){
+    var rem=r[0],loc={},weeks={};
+    (r[1]||[]).forEach(function(m){if(m&&typeof m.d==="string")loc[m.d]=m;});
+    Object.keys(rem.w).forEach(function(w){var o=ix.w[w];if(!o||o.upd!==rem.w[w].upd||o.id!==rem.w[w].id)weeks[w]=1;ix.w[w]={id:rem.w[w].id,upd:rem.w[w].upd};});
+    Object.keys(loc).forEach(function(d){var m=loc[d];if(!m.up||(rem.full&&!rem.w[ftWeek(d)]))weeks[ftWeek(d)]=1;});
+    /* semana por semana: baja lo nuevo, sube lo tuyo */
+    var chain=Promise.resolve();
+    Object.keys(weeks).sort().forEach(function(w){chain=chain.then(function(){
+      var R=rem.w[w],G=ix.w[w];
+      var rd=R&&R.raw?ftRaw(R.raw):G&&G.id?ghApi("/gists/"+G.id).then(function(g){var f=g&&g.files&&g.files[FT.pre+w+FT.suf];return f?ghText(f):null;},function(e){if(e.status===404){delete ix.w[w];return null;}throw e;}):Promise.resolve(null);
+      return rd.then(function(txt){
+        var it=ftParse(txt,w)||{},sent=[],ch=0;
+        var days=Object.keys(it).concat(Object.keys(loc).filter(function(d){return ftWeek(d)===w;}));
+        var step=Promise.resolve();
+        days.forEach(function(d){step=step.then(function(){
+          var x=it[d],m=loc[d];
+          if(x&&(!m||x.t>m.t)){
+            if(x.del){var nm={d:d,t:x.t,del:1,up:1};loc[d]=nm;return ftWrite(nm,null).then(function(){ftDrop(d);delete FT.has[d];got=1;});}
+            return ftOpenItem(d,x).then(function(ab){var nm={d:d,t:x.t,up:1};loc[d]=nm;return ftWrite(nm,ab).then(function(){ftDrop(d);FT.has[d]=x.t;got=1;});},function(){});}
+          if(m&&(!x||m.t>x.t)){
+            if(m.del){it[d]={t:m.t,del:1};sent.push(m);ch=1;return;}
+            return ftBytes(d).then(function(ab){if(!ab)return;return ftSeal(d,m.t,ab).then(function(y){it[d]=y;sent.push(m);ch=1;});});}
+          if(m&&x&&m.t===x.t&&!m.up)sent.push(m);
+        });});
+        return step.then(function(){
+          if(!ch)return ftSetUp(sent);
+          var files={};files[FT.pre+w+FT.suf]={content:JSON.stringify({app:"plan-volumen",kind:"fotos",v:1,w:w,enc:"aes-256-gcm",items:it})};
+          var G2=ix.w[w];
+          var put=G2&&G2.id?ghApi("/gists/"+G2.id,"PATCH",{files:files}):ghApi("/gists","POST",{description:"Plan de Volumen · fotos de la semana del "+w+" (no borrar)",public:false,files:files});
+          return put.then(function(g){if(g&&g.id)ix.w[w]={id:g.id,upd:g.updated_at||""};return ftSetUp(sent);});
+        });
+      });
+    });});
+    return chain.then(function(){ix.since=rem.since;ftIxSet(ix);});
+  }).then(function(){FT.busy=0;if(got&&view==="entreno")updWoStats();if(FT.again){FT.again=0;ftSoon();}},
+    function(){FT.busy=0;});
+}
+ftLoad();
 
 /* ================= GUÍA ================= */
 function renderGuia(){
@@ -3132,7 +3313,7 @@ function renderGuia(){
 
 /* ================= navegación ================= */
 /* ================= AJUSTES ================= */
-var APPV="2026.11.13-612f7b";
+var APPV="2026.11.13-c0baf3";
 var AVCAT=[["meal","Comidas","A la hora de cada comida"],["cre","Creatina","Al terminar el entreno (domingo: con el desayuno)"],["gym","Gym","30 minutos antes de entrenar"],["med","Medicamento","15 minutos antes del desayuno"],["peso","Pésate","Lunes, miércoles y viernes, 25 min antes del desayuno"],["cocina","Batch y prep","Domingo 12:00 y miércoles 21:30"],["sueno","Dormir","30 minutos antes de tu hora de dormir"]];
 function avCatOn(c){var C=sget("cfg")||{};return !(C.avo&&C.avo[c]===false);}
 function ajRow(h,t,body){return '<div class="card ajc" style="display:grid;gap:10px"><div class="sec-h"><h3 style="font-size:1.05rem">'+h+'</h3>'+(t?'<span class="r eyebrow">'+t+'</span>':'')+'</div>'+body+'</div>';}
