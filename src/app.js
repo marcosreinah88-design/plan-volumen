@@ -110,7 +110,10 @@ function sanDoc(k,v){
     if(o.mn!=null&&!(typeof o.mn==="number"&&o.mn===Math.floor(o.mn)&&o.mn>=0&&o.mn<nm))delete o.mn;
     if(o.rk!=null&&!(typeof o.rk==="string"&&(o.rk==="sup"||(GD&&Object.prototype.hasOwnProperty.call(GD,o.rk)))))delete o.rk;
     ["m","s","sw"].forEach(function(f){if(o[f]!=null&&!obj(o[f]))delete o[f];});
-    if(o.s)Object.keys(o.s).forEach(function(id){if(!Array.isArray(o.s[id]))delete o.s[id];});
+    /* cada serie solo lleva números (peso, reps, hecha) o vacío: un texto raro en un respaldo no llega a la pantalla */
+    if(o.s)Object.keys(o.s).forEach(function(id){if(!Array.isArray(o.s[id])){delete o.s[id];return;}
+      o.s[id]=o.s[id].map(function(r){return Array.isArray(r)?r.slice(0,6).map(function(c){return typeof c==="number"||typeof c==="boolean"||c===""||c===null?c:"";}):["","",0];});});
+    ["w","ml","ss","se","lt","med","gc"].forEach(function(f){if(o[f]!=null&&typeof o[f]!=="number"&&typeof o[f]!=="boolean")delete o[f];});
     if(o.rod!=null&&!(typeof o.rod==="number"&&o.rod===Math.floor(o.rod)&&o.rod>=0&&o.rod<=10))delete o.rod;
     if(o.fin!=null&&o.fin!==0&&o.fin!==1)delete o.fin;
     if(o.cf!=null&&!(typeof o.cf==="number"&&o.cf===Math.floor(o.cf)&&o.cf>=0&&o.cf<=20))delete o.cf;

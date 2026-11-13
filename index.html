@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-zyvnYsPqRFYKqrCsPKqjNMKpe1M/mVgg47HNNHKJcCk=' 'sha256-zTy0ZjxcjjGgxbevhZcx78LFMUbIS6A47qPJEONL8a0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://gist.githubusercontent.com https://generativelanguage.googleapis.com; manifest-src 'self'; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-BYD4dfZ3I/bKUCB9/UzHury/cIrm6+/E0PmRgocTzsA=' 'sha256-zTy0ZjxcjjGgxbevhZcx78LFMUbIS6A47qPJEONL8a0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://gist.githubusercontent.com https://generativelanguage.googleapis.com; manifest-src 'self'; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <!--pv-app-->
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -1406,7 +1406,10 @@ function sanDoc(k,v){
     if(o.mn!=null&&!(typeof o.mn==="number"&&o.mn===Math.floor(o.mn)&&o.mn>=0&&o.mn<nm))delete o.mn;
     if(o.rk!=null&&!(typeof o.rk==="string"&&(o.rk==="sup"||(GD&&Object.prototype.hasOwnProperty.call(GD,o.rk)))))delete o.rk;
     ["m","s","sw"].forEach(function(f){if(o[f]!=null&&!obj(o[f]))delete o[f];});
-    if(o.s)Object.keys(o.s).forEach(function(id){if(!Array.isArray(o.s[id]))delete o.s[id];});
+    /* cada serie solo lleva números (peso, reps, hecha) o vacío: un texto raro en un respaldo no llega a la pantalla */
+    if(o.s)Object.keys(o.s).forEach(function(id){if(!Array.isArray(o.s[id])){delete o.s[id];return;}
+      o.s[id]=o.s[id].map(function(r){return Array.isArray(r)?r.slice(0,6).map(function(c){return typeof c==="number"||typeof c==="boolean"||c===""||c===null?c:"";}):["","",0];});});
+    ["w","ml","ss","se","lt","med","gc"].forEach(function(f){if(o[f]!=null&&typeof o[f]!=="number"&&typeof o[f]!=="boolean")delete o[f];});
     if(o.rod!=null&&!(typeof o.rod==="number"&&o.rod===Math.floor(o.rod)&&o.rod>=0&&o.rod<=10))delete o.rod;
     if(o.fin!=null&&o.fin!==0&&o.fin!==1)delete o.fin;
     if(o.cf!=null&&!(typeof o.cf==="number"&&o.cf===Math.floor(o.cf)&&o.cf>=0&&o.cf<=20))delete o.cf;
@@ -3129,7 +3132,7 @@ function renderGuia(){
 
 /* ================= navegación ================= */
 /* ================= AJUSTES ================= */
-var APPV="2026.11.13-420c4d";
+var APPV="2026.11.13-612f7b";
 var AVCAT=[["meal","Comidas","A la hora de cada comida"],["cre","Creatina","Al terminar el entreno (domingo: con el desayuno)"],["gym","Gym","30 minutos antes de entrenar"],["med","Medicamento","15 minutos antes del desayuno"],["peso","Pésate","Lunes, miércoles y viernes, 25 min antes del desayuno"],["cocina","Batch y prep","Domingo 12:00 y miércoles 21:30"],["sueno","Dormir","30 minutos antes de tu hora de dormir"]];
 function avCatOn(c){var C=sget("cfg")||{};return !(C.avo&&C.avo[c]===false);}
 function ajRow(h,t,body){return '<div class="card ajc" style="display:grid;gap:10px"><div class="sec-h"><h3 style="font-size:1.05rem">'+h+'</h3>'+(t?'<span class="r eyebrow">'+t+'</span>':'')+'</div>'+body+'</div>';}
