@@ -556,8 +556,11 @@ function jugSVG(ml){
     spill+'</svg><span class="jl"><b>'+(over?'+'+fmt.format(extra):fmt.format(ml))+'</b> '+(over?'ml de más':'ml')+'</span></div>';
 }
 /* tazas de café del día (opcional, solo registro; 12 nov 2026). dd.m.caf viene de la tarjeta vieja = 1 taza */
+/* taza dibujada: llena (con café) o vacía (contorno punteado) */
+var cafPop=false;
+function mugSVG(on){return '<svg viewBox="0 0 44 44" aria-hidden="true">'+(on?'<path class="stm" d="M15 9c-2-2.2 2-3.8 0-6M21 9c-2-2.2 2-3.8 0-6M27 9c-2-2.2 2-3.8 0-6"/>':'')+'<ellipse class="sau" cx="21" cy="39" rx="16" ry="2.6"/><path class="hdl" d="M32 18h2.6a4.8 4.8 0 0 1 0 9.6H31.4"/><path class="bod" d="M8 14h24v12.5A10.5 10.5 0 0 1 21.5 37h-3A10.5 10.5 0 0 1 8 26.5Z"/>'+(on?'<ellipse class="cof" cx="20" cy="14.6" rx="11" ry="2.4"/><path class="shn" d="M11.5 18v7.5a7 7 0 0 0 3 5.8"/>':'')+'</svg>';}
 function cafN(dd){return dd.cf!=null?dd.cf:(dd.m&&dd.m.caf?1:0);}
-function addCaf(v){var dd=dayDoc(selDay),n=Math.max(0,Math.min(20,cafN(dd)+v));dd.cf=n;if(dd.m)delete dd.m.caf;dd._auth=Date.now();saveDay(selDay);renderHabits();if(v>0)toast(n===1?"Primer café del día":"Llevas "+n+" cafés hoy");}
+function addCaf(v){var dd=dayDoc(selDay),n=Math.max(0,Math.min(20,cafN(dd)+v));dd.cf=n;if(dd.m)delete dd.m.caf;dd._auth=Date.now();saveDay(selDay);cafPop=v>0;renderHabits();if(v>0)toast(n===1?"Primer café del día":"Llevas "+n+" cafés hoy");}
 function waterMl(dd){return dd.ml!=null?dd.ml:(dd.w||0)*375;}
 var WGOAL=3000;
 /* medicamento de la mañana: se guarda en el día como la hora en que lo marcaste */
@@ -592,11 +595,18 @@ function renderHabits(){
     '<div class="wadd">'+[250,500,750,1000].map(function(v){return '<button type="button" class="btn ghost sm" data-ml="'+v+'"'+dis+'>+'+fmt.format(v)+'</button>';}).join("")+'</div>'+
     '<form class="wcus" id="wcus"><input type="number" inputmode="numeric" step="1" min="1" max="5000" id="wmli" placeholder="Otra cantidad" aria-label="Mililitros de agua"'+dis+'><span>ml</span><button class="btn ghost sm" type="submit"'+dis+'>Sumar</button><button class="btn ghost sm" type="button" data-ml="-250"'+(dis||!ml?' disabled':'')+' aria-label="Quitar 250 ml">−250</button></form></div>'+jugSVG(ml)+'</div>'+
     '<p class="small muted">Meta: 3,000 ml. En días de pierna, 300 a 700 ml más.</p>';
-  var cf=cafN(dd);
-  hb+='<div class="cafe"><div class="sec-h" style="gap:8px"><h3 style="font-size:1rem">Café</h3><span class="r small muted">opcional · solo registro</span></div>'+
-    '<div class="cfrow"><div class="cfcups" aria-label="'+cf+' tazas de café">'+(cf?'<span aria-hidden="true">'+new Array(cf+1).join("☕")+'</span>':'<span class="small muted">Ninguna taza hoy</span>')+'</div>'+
-    '<div class="cfbtn"><button type="button" class="btn ghost sm" data-cf="-1"'+(dis||!cf?' disabled':'')+' aria-label="Quitar una taza">−</button><button type="button" class="btn ghost sm" data-cf="1"'+(dis||cf>=20?' disabled':'')+' aria-label="Sumar una taza">+ ☕</button></div></div>'+
-    '<p class="small muted">Sin azúcar no cambia tu dieta. Después de las 2 de la tarde puede quitarte el sueño.</p></div>';
+  var cf=cafN(dd),slots=Math.max(4,cf+1),cups="";
+  for(var i=0;i<slots;i++){
+    if(i<cf)cups+='<span class="cup on'+(i===cf-1&&cafPop?' pop':'')+'">'+mugSVG(true)+'</span>';
+    else if(i===cf)cups+='<button type="button" class="cup add" data-cf="1"'+(dis||cf>=20?' disabled':'')+' aria-label="Sumar una taza de café">'+mugSVG(false)+'<b aria-hidden="true">+</b></button>';
+    else cups+='<span class="cup off" aria-hidden="true">'+mugSVG(false)+'</span>';
+  }
+  cafPop=false;
+  hb+='<div class="cafe"><div class="cfh"><div><h3>Café</h3><span class="small muted">opcional · solo registro</span></div>'+
+    '<div class="cfn"><b>'+cf+'</b><span>'+(cf===1?'taza':'tazas')+'</span></div></div>'+
+    '<div class="cfcups" role="group" aria-label="'+cf+' '+(cf===1?'taza':'tazas')+' de café hoy">'+cups+'</div>'+
+    '<div class="cff"><p class="small muted">Sin azúcar no cambia tu dieta. Después de las 2 de la tarde puede quitarte el sueño.</p>'+
+    '<button type="button" class="btn ghost sm" data-cf="-1"'+(dis||!cf?' disabled':'')+' aria-label="Quitar una taza">−1</button></div></div>';
   $("habits").innerHTML=hb;
 }
 /* ===== resumen de la semana: domingo (esta semana) y lunes (la que acaba de pasar) ===== */
