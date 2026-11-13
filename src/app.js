@@ -11,7 +11,13 @@ var KEYS=["dom","lun","mar","mie","jue","vie","sab"];
 var GK=["lun","mar","mie","jue","vie","sab"];
 var SHORT={lun:"Empuje",mar:"Pull day",mie:"Pierna A",jue:"Brazos",vie:"Torso",sab:"Pierna B",dom:"Batch"};
 var WSHORT={lun:"Empuje",mar:"Pull day",mie:"Pierna",jue:"Brazos",vie:"Torso",sab:"Pierna",dom:"Batch"};
-var GYMT={lun:"11:45",mar:"10:15",mie:"11:45",jue:"10:15",vie:"15:00",sab:"10:00"};
+var GYMT={lun:"11:45",mar:"10:15",mie:"11:45",jue:"10:15",vie:"10:00",sab:"10:00"};
+/* hora sugerida para despertar y dormir (13 nov 2026): [despertar, dormir esa noche, por qué] */
+var SUE={dom:["7:30","22:00","Cerca de tu hora de entre semana para no desajustar el sueño"],
+  lun:["5:45","22:00","Desayuno 6:15 y Otorrino a las 7:00"],mar:["5:45","22:00","Desayuno 6:15 y Oftalmología a las 7:00"],
+  mie:["5:45","22:00","Desayuno 6:15 y Otorrino a las 7:00"],jue:["5:45","22:00","Desayuno 6:15 y Oftalmología a las 7:00"],
+  vie:["6:30","23:00","Desayuno 7:00 y gym a las 10:00"],sab:["7:30","23:00","Desayuno 8:00: es tu pre-entreno del gym de las 10:00"]};
+function sueH(d){var k=KEYS[d.getDay()],nk=KEYS[(d.getDay()+1)%7],m=mins(SUE[nk][0])+1440-mins(SUE[k][1]);return [SUE[nk][0],Math.floor(m/60)+" h"+(m%60?" "+m%60:"")];}
 var GMIN={lun:80,mar:85,mie:75,jue:90,vie:80,sab:80};
 var CLS={lun:[["7:00","8:15","Otorrino"],["8:30","10:15","Cirugía"],["19:00","20:15","Gastroenterología"]],
   mar:[["7:00","8:40","Oftalmología"],["9:00","10:15","Psiquiatría"],["13:00","18:00","Campos Clínicos"]],
@@ -443,6 +449,7 @@ function dayItems(d){
   var bt=ge!=null?ge+1:mins(hr.pre)+1;it.push({type:"bat",s:bt,e:bt+30,a:ge!=null?hm(ge):hr.pre,post:ge!=null});
   var rkk=dayRK(d);if(rkk){var gt=GYMT[k]&&GYMT[k].indexOf(":")>0?GYMT[k]:"10:00",s0=mins(gt);it.push({type:"gym",k:rkk,s:s0,e:s0+GM[rkk],a:gt,cl:cl});}
   else if(GD[k]&&(planKey0(d)===k||(modeOf(d)==="full"))){var s=mins(GYMT[k]);it.push({type:"gym",k:k,s:s,e:s+GM[k],a:GYMT[k],cl:cl});}
+  it.push({type:"wake",s:mins(SUE[k][0]),e:mins(SUE[k][0])+1,a:SUE[k][0]});it.push({type:"sleep",s:mins(SUE[k][1]),e:mins(SUE[k][1])+1,a:SUE[k][1]});
   if(k==="mie")it.push({type:"prep",s:mins("21:30"),e:mins("21:50"),a:"21:30"});
   if(k==="dom")it.push({type:"batch",s:mins("12:00"),e:mins("13:30"),a:"12:00"});
   it.sort(function(x,y){return x.s-y.s||(x.type==="cls"?-1:1);});
@@ -455,6 +462,8 @@ function itemTitle(d,x){
   if(x.type==="cre")return ["Creatina · 5 g",x.post?"Al terminar el entreno, en agua o en tu batido":"Con el desayuno, en el licuado o en agua"];
   if(x.type==="bat")return ["Batido de proteína (opcional)","≈"+BAT.kcal+" kcal · "+BAT.p+"–24 g de proteína"];
   if(x.type==="prep")return ["Prep para el jueves","20 minutos antes de dormir"];
+  if(x.type==="wake")return ["Despertar",SUE[KEYS[d.getDay()]][2]];
+  if(x.type==="sleep"){var sh=sueH(d);return ["A dormir","Mañana te levantas a las "+sh[0]+" · "+sh[1]+" de sueño"];}
   return ["Batch del Menú "+(weekMenu(d)+1),"90 minutos de cocina"];
 }
 function renderNext(){
@@ -474,8 +483,8 @@ function renderNext(){
   else if(nx){x=nx;lab="Siguiente · "+nx.a;cd=dur(nx.s-n);cdl="Faltan";}
   else if(cur){x=cur;lab="Ahora";cd=dur(cur.e-n);cdl="Termina en";}
   else{dday=addD(d,1);var t=dayItems(dday);x=t[0];lab="Mañana · "+x.a;cd="";cdl="";}
-  var tt=itemTitle(dday,x),col=x.type==="gym"?"var(--gym)":x.type==="cls"?"var(--muted)":x.type==="cre"?"var(--d-jue)":"var(--food)";
-  box.innerHTML='<div class="next" style="--nc:'+col+'"><div class="ico">'+ic(x.type==="cls"?"cls":x.type==="gym"?"gym":x.type==="prep"?"prep":x.type==="cre"?"cre":"meal")+'</div><div class="t"><span class="eyebrow">'+lab+'</span><b>'+tt[0]+'</b><span>'+tt[1]+'</span></div>'+(cd?'<div class="cd">'+cd+'<small>'+cdl+'</small></div>':'')+'</div>';
+  var tt=itemTitle(dday,x),col=x.type==="gym"?"var(--gym)":x.type==="cls"||x.type==="wake"||x.type==="sleep"?"var(--muted)":x.type==="cre"?"var(--d-jue)":"var(--food)";
+  box.innerHTML='<div class="next" style="--nc:'+col+'"><div class="ico">'+ic(x.type==="wake"?"sun":x.type==="sleep"?"moon":x.type==="cls"?"cls":x.type==="gym"?"gym":x.type==="prep"?"prep":x.type==="cre"?"cre":"meal")+'</div><div class="t"><span class="eyebrow">'+lab+'</span><b>'+tt[0]+'</b><span>'+tt[1]+'</span></div>'+(cd?'<div class="cd">'+cd+'<small>'+cdl+'</small></div>':'')+'</div>';
 }
 function creStreak(){var n=0,d=TODAY,v=sget(dk(d));if(!(v&&v.m&&v.m.cre))d=addD(d,-1);while(n<500){v=sget(dk(d));if(!(v&&v.m&&v.m.cre))break;n++;d=addD(d,-1);}return n;}
 function creBlock(d){
@@ -525,6 +534,7 @@ function renderTimeline(){
     if(x.type==="meal"){h+='<div class="ti'+(dd.m[x.k]?' done':'')+(gone?' past':'')+'" style="--ic:var(--food)"><div class="tm">'+x.a+'</div><div class="rail"><span class="dot"></span></div><div class="bd">'+mealBlock(d,x.k)+'</div></div>';return;}
     if(x.type==="gym"&&x.cl){h+='<div class="ti gcl'+(gone?' past':'')+'" style="--ic:var(--muted)"><div class="tm">'+x.a+'<small>cerrado</small></div><div class="rail"><span class="dot"></span></div><div class="bd">'+gymClosedBlock(d,x.k)+'</div></div>';return;}
     if(x.type==="gym"){var tot=planTotal(d)||entTotal(x.k,d),ds=doneSets(d);h+='<div class="ti'+(tot&&ds>=tot?' done':'')+(gone?' past':'')+'" style="--ic:var(--gym)"><div class="tm">'+x.a+'<small>'+GMat(d)[x.k]+' min</small></div><div class="rail"><span class="dot"></span></div><div class="bd">'+gymBlock(d,x.k)+'</div></div>';return;}
+    if(x.type==="wake"||x.type==="sleep"){var tt=itemTitle(d,x);h+='<div class="ti cls sue'+(gone?' past':'')+'"><div class="tm">'+x.a+'</div><div class="rail"><span class="dot"></span></div><div class="bd"><div class="cls-b">'+ic(x.type==="wake"?"sun":"moon")+'<b>'+tt[0]+'</b><span>'+tt[1]+'</span></div></div></div>';return;}
     var M=MENUS[weekMenu(d)];
     if(x.type==="prep"){h+='<div class="ti'+(gone?' past':'')+'" style="--ic:var(--muted)"><div class="tm">'+x.a+'</div><div class="rail"><span class="dot"></span></div><div class="bd"><div class="mini"><b>Prep para el jueves · 20 min</b><p>'+WED_BASE+M.wed+'</p></div></div></div>';return;}
     h+='<div class="ti'+(gone?' past':'')+'" style="--ic:var(--food)"><div class="tm">'+x.a+'<small>90 min</small></div><div class="rail"><span class="dot"></span></div><div class="bd"><div class="mini"><b>Batch del Menú '+(weekMenu(d)+1)+': '+M.n+'</b><p>'+M.short+'. Lo de lunes a miércoles va al refri; lo de jueves a sábado, al congelador.</p><button class="btn food sm" type="button" data-batch="'+weekMenu(d)+'">Ver pasos y lista del súper</button></div></div></div>';
@@ -1730,6 +1740,7 @@ function avBuild(){
       if(x.type==="meal"&&!m[x.k]){var tt=itemTitle(d,x);add(x.s,x.k,mealName(d,x.k)+" · "+x.a,tt[0].replace(/^[^:]*:\s*/,"")+" · "+tt[1]);}
       else if(x.type==="cre"&&!m.cre)add(x.post?x.s:x.s-1,"cre","Creatina · 5 g",x.post?"Al terminar el entreno, en agua o en tu batido":"Con el desayuno");
       else if(x.type==="gym"&&!x.cl&&!doneSets(d)){var g=GDat(d)[x.k]||GD[x.k];add(x.s-30,"gym","En 30 min: "+g.t,"Entreno a las "+x.a+" · "+g.tm);}
+      else if(x.type==="sleep"){var sh=sueH(d);add(x.s-30,"sueno","A dormir en 30 min","Apaga pantallas a las "+x.a+". Mañana te levantas a las "+sh[0]+".");}
       else if(x.type==="prep")add(x.s,"prep","Prep para el jueves","20 minutos antes de dormir");
       else if(x.type==="batch")add(x.s,"batch","Batch del Menú "+(weekMenu(d)+1),"90 minutos de cocina");
     });
@@ -1823,7 +1834,7 @@ function renderGuia(){
 /* ================= navegación ================= */
 /* ================= AJUSTES ================= */
 var APPV="dev";
-var AVCAT=[["meal","Comidas","A la hora de cada comida"],["cre","Creatina","Al terminar el entreno (domingo: con el desayuno)"],["gym","Gym","30 minutos antes de entrenar"],["med","Medicamento","15 minutos antes del desayuno"],["peso","Pésate","Lunes, miércoles y viernes, 25 min antes del desayuno"],["cocina","Batch y prep","Domingo 12:00 y miércoles 21:30"]];
+var AVCAT=[["meal","Comidas","A la hora de cada comida"],["cre","Creatina","Al terminar el entreno (domingo: con el desayuno)"],["gym","Gym","30 minutos antes de entrenar"],["med","Medicamento","15 minutos antes del desayuno"],["peso","Pésate","Lunes, miércoles y viernes, 25 min antes del desayuno"],["cocina","Batch y prep","Domingo 12:00 y miércoles 21:30"],["sueno","Dormir","30 minutos antes de tu hora de dormir"]];
 function avCatOn(c){var C=sget("cfg")||{};return !(C.avo&&C.avo[c]===false);}
 function ajRow(h,t,body){return '<div class="card ajc" style="display:grid;gap:10px"><div class="sec-h"><h3 style="font-size:1.05rem">'+h+'</h3>'+(t?'<span class="r eyebrow">'+t+'</span>':'')+'</div>'+body+'</div>';}
 function renderAjustes(){
