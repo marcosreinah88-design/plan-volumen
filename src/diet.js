@@ -200,26 +200,26 @@
   var HRS={
     LM:{des:"6:15",pre:"10:30",com:"13:45",col:"17:00",cen:"20:30"},
     MJ:{des:"6:15",pre:"8:45",com:"12:15",col:"16:00",cen:"19:30"},
-    V:{des:"7:30",col:"10:30",com:"12:45",pre:"17:00",cen:"20:15"},
+    V:{des:"7:00",pre:"8:30",com:"12:00",col:"16:00",cen:"20:00"},
     S:{des:"8:00",col:"11:45",com:"14:30",pre:"17:30",cen:"20:30"},
     D:{des:"9:00",col:"11:30",com:"14:30",pre:"17:30",cen:"20:30"}
   };
   var HNOTE={
     LM:{pre:"después de Cirugía, 75 min antes del gym",com:"post-entreno",col:"tarde libre",cen:"después de Gastro"},
     MJ:{pre:"entre Oftalmología y Psiquiatría, 90 min antes del gym",com:"post-entreno, antes de Campos",col:"pausa en Campos: llévala lista",cen:"después de Campos"},
-    V:{com:"antes de Anfiteatro: es tu comida pre-entreno",pre:"después del gym, con o sin batido"},
+    V:{pre:"90 min antes del gym",com:"post-entreno, antes de Anfiteatro",col:"después de Anfiteatro"},
     S:{des:"también es tu pre-entreno",col:"post-entreno",pre:"hoy no hay gym en la tarde"},
     D:{}
   };
   /* cuando el gym no va después, el pre-entreno se come como merienda */
-  var HNAME={V:{pre:"Merienda"},S:{pre:"Merienda"},D:{pre:"Merienda"}};
+  var HNAME={S:{pre:"Merienda"},D:{pre:"Merienda"}};
   var DAYS=[
     {k:"dom",s:"Dom",n:"Domingo",gym:"Descanso · día de batch",h:"D",cl:"Sin clases. Hoy cocinas el batch del menú que sigue (pestaña Domingo de batch)."},
     {k:"lun",s:"Lun",n:"Lunes",gym:"Gym: Empuje",h:"LM",cl:"Otorrino 7:00, Cirugía 8:30–10:15 y Gastroenterología 19:00–20:15. Gym a las 11:45."},
     {k:"mar",s:"Mar",n:"Martes",gym:"Gym: Pull day",h:"MJ",cl:"Oftalmología 7:00, Psiquiatría 9:00–10:15 y Campos Clínicos 13:00–18:00. Gym a las 10:15."},
     {k:"mie",s:"Mié",n:"Miércoles",gym:"Gym: Pierna A",h:"LM",cl:"Otorrino 7:00, Cirugía 8:30–10:15 y Gastroenterología 19:00–20:15. Gym a las 11:45."},
     {k:"jue",s:"Jue",n:"Jueves",gym:"Gym: Brazos",h:"MJ",cl:"Oftalmología 7:00, Psiquiatría 9:00–10:15 y Campos Clínicos 13:00–18:00. Gym a las 10:15."},
-    {k:"vie",s:"Vie",n:"Viernes",gym:"Gym: Torso",h:"V",cl:"Mañana libre y das Anfiteatro de 13:30 a 15:00. Gym a las 15:00."},
+    {k:"vie",s:"Vie",n:"Viernes",gym:"Gym: Torso",h:"V",cl:"Gym a las 10:00 y das Anfiteatro de 13:30 a 15:00."},
     {k:"sab",s:"Sáb",n:"Sábado",gym:"Gym: Pierna B",h:"S",cl:"Sin clases. Gym a las 10:00."}
   ];
 
