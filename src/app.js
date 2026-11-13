@@ -1129,10 +1129,10 @@ function lastWeight(){var W=getDoc("weights",{e:[]});return W.e.length?W.e[W.e.l
 function addWeight(d,kg){var W=getDoc("weights",{e:[]});W.e=W.e.filter(function(r){return r[0]!==d;});W.e.push([d,Math.round(kg*100)/100]);W.e.sort(function(a,b){return a[0]<b[0]?-1:1;});sput("weights",W);}
 function avg(a){return a.length?a.reduce(function(s,x){return s+x;},0)/a.length:null;}
 var recAll=false,pgSeg=(function(){try{return localStorage.getItem("pvm:pgseg")||"res";}catch(e){return "res";}})();
-var PGS={res:["pgw","pgweek","pgdias"],ej:["pgex","pgrec"],cu:["pgtan"],med:["pgmed"]};
+var PGS={res:["pgw","pgweek","pgdias"],ej:["pgex","pgrec"],cu:["pgtan"],med:["pgmed"],fot:["pgfot"]};
 function setPgSeg(v){pgSeg=v;try{localStorage.setItem("pvm:pgseg",v);}catch(e){}}
 function pgSegUI(){Object.keys(PGS).forEach(function(k){PGS[k].forEach(function(id){$(id).hidden=k!==pgSeg;});});$("pgseg").querySelectorAll("[data-pg]").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.pg===pgSeg);});}
-$("pgseg").addEventListener("click",function(e){var b=e.target.closest("[data-pg]");if(!b)return;setPgSeg(b.dataset.pg);pgSegUI();if(pgSeg==="med"){renderMedallas();vin($("pgmed"));}window.scrollTo(0,0);});
+$("pgseg").addEventListener("click",function(e){var b=e.target.closest("[data-pg]");if(!b)return;setPgSeg(b.dataset.pg);pgSegUI();if(pgSeg==="med"){renderMedallas();vin($("pgmed"));}if(pgSeg==="fot"){renderFotos();vin($("pgfot"));}window.scrollTo(0,0);});
 function renderProgreso(){pgSegUI();
   var W=getDoc("weights",{e:[]}),E=W.e.map(function(r){return {d:fromIso(r[0]),kg:r[1],s:r[0]};});
   var last=E.length?E[E.length-1]:null;
@@ -1160,7 +1160,7 @@ function renderProgreso(){pgSegUI();
   ids.sort(function(a,b){return (order[a]==null?999:order[a])-(order[b]==null?999:order[b]);});
   $("pgrec").innerHTML='<div class="sec-h"><h3 style="font-size:1.05rem">Mejores series</h3><span class="r eyebrow">1RM estimado</span></div>'+(ids.length?'<ul class="rec">'+ids.slice(0,recAll?999:6).map(function(id){var b=B[id],dd=fromIso(b.d);return '<li><button type="button" class="recb" data-exs="'+esc(id)+'"><span>'+esc(b.n)+'<small>'+dd.getDate()+' '+MES3[dd.getMonth()]+'</small></span><span>'+kgs(b.kg)+' lb × '+b.r+' · <b>'+kgs(b.e)+'</b></span></button></li>';}).join("")+'</ul>'+(ids.length>6?'<button type="button" class="btn ghost sm" data-recall>'+(recAll?'Ver menos':'Ver las '+ids.length)+'</button>':''):'<p class="empty">Cuando marques series en Entreno, aquí aparece tu mejor serie de cada ejercicio.</p>');
   renderDias();renderExStats();
-  renderTanita();if(pgSeg==="med")renderMedallas();
+  renderTanita();if(pgSeg==="med")renderMedallas();if(pgSeg==="fot")renderFotos();
   var bi=blockInfo(TODAY);$("pgsub").textContent=bi.pre?"":"Bloque "+bi.block+" · semana "+(bi.wk+1);
 }
 var fmtI=new Intl.NumberFormat("es-MX",{maximumFractionDigits:0});
@@ -1853,8 +1853,8 @@ function ftSetUp(list){if(!list.length)return Promise.resolve();return ftDB().th
   var tx=db.transaction("meta","readwrite"),st=tx.objectStore("meta");
   list.forEach(function(x){var g=st.get(x.d);g.onsuccess=function(){var m=g.result;if(m&&m.t===x.t){m.up=1;st.put(m);}};});
   tx.oncomplete=function(){ok();};tx.onerror=tx.onabort=function(){no(tx.error);};});});}
-function ftLoad(){return ftMetas().then(function(L){FT.has={};(L||[]).forEach(function(m){if(m&&!m.del&&typeof m.d==="string")FT.has[m.d]=m.t;});FT.ok=true;
-  if(view==="entreno")updWoStats();},function(){FT.ok=false;});}
+function ftLoad(){return ftMetas().then(function(L){FT.has={};(L||[]).forEach(function(m){if(m&&!m.del&&typeof m.d==="string")FT.has[m.d]=m.t;});FT.ok=true;ftRefresh();},function(){FT.ok=false;ftRefresh();});}
+function ftRefresh(){if(view==="entreno")updWoStats();else if(view==="progreso"&&pgSeg==="fot")renderFotos();}
 function ftIsJpg(u8){return u8&&u8.length>3&&u8.length<=FT.MAXB&&u8[0]===0xFF&&u8[1]===0xD8&&u8[2]===0xFF;}
 function ftDrop(d){if(FT.url[d]){try{URL.revokeObjectURL(FT.url[d]);}catch(e){}delete FT.url[d];}delete FT.ld[d];}
 /* pide la imagen del día y la pone en las <img data-ftimg> que estén en pantalla */
@@ -1896,12 +1896,40 @@ function ftHTML(wd,ro){
   return '<div class="card ftc ftc0"><div class="ftt"><b>Foto del día</b><span class="small muted">Opcional. Tómate una foto al terminar como evidencia de que viniste; se guarda en el registro de este día.</span></div>'+
     '<label class="btn pri sm">'+ic("cam")+'Tomar o subir foto<input type="file" class="fpick" accept="image/*" data-ftin="'+d+'"></label></div>';
 }
-function ftOpen(d){
-  var wd=fromIso(d),when=DAYS[wd.getDay()].n.toLowerCase()+" "+wd.getDate()+" de "+MES[wd.getMonth()];
-  lbFrom=document.activeElement;
-  $("lbbox").innerHTML='<div class="h"><h3 id="lbt">Foto del '+esc(when)+'</h3><button class="x" type="button" data-close aria-label="Cerrar">'+ic("x")+'</button></div><img class="ftbig" data-ftimg="'+d+'" alt="Tu foto del entreno del '+esc(when)+'"'+(FT.url[d]?' src="'+FT.url[d]+'"':'')+'>';
+function ftOpen(d,gal){
+  var wd=fromIso(d),when=DAYS[wd.getDay()].n.toLowerCase()+" "+wd.getDate()+" de "+MES[wd.getMonth()]+(wd.getFullYear()!==TODAY.getFullYear()?" de "+wd.getFullYear():"");
+  if(!$("lb").hidden&&FT.gal)gal=FT.gal;else lbFrom=document.activeElement;
+  FT.gal=gal||null;var ix=gal?gal.indexOf(d):-1,nav="";
+  if(gal&&gal.length>1)nav='<div class="ftnav"><button type="button" class="btn ghost sm" data-ftnav="1"'+(ix>=gal.length-1?' disabled':'')+'>‹ Anterior</button><span class="small muted">'+(ix+1)+' de '+gal.length+'</span><button type="button" class="btn ghost sm" data-ftnav="-1"'+(ix<=0?' disabled':'')+'>Siguiente ›</button></div>';
+  $("lbbox").innerHTML='<div class="h"><h3 id="lbt">Foto del '+esc(when)+'</h3><button class="x" type="button" data-close aria-label="Cerrar">'+ic("x")+'</button></div><img class="ftbig" data-ftimg="'+d+'" alt="Tu foto del entreno del '+esc(when)+'"'+(FT.url[d]?' src="'+FT.url[d]+'"':'')+'>'+nav;
+  $("lbbox").dataset.ftd=d;
   $("lb").hidden=false;$("lbbox").querySelector("[data-close]").focus();ftShow(d);
 }
+function ftNav(st){var g=FT.gal,d=$("lbbox").dataset.ftd;if(!g||$("lb").hidden||!d)return;var i=g.indexOf(d)+st;if(i>=0&&i<g.length)ftOpen(g[i]);}
+$("lb").addEventListener("click",function(e){var b=e.target.closest("[data-ftnav]");if(b&&!b.disabled)ftNav(+b.dataset.ftnav);});
+document.addEventListener("keydown",function(e){if($("lb").hidden||!FT.gal||!$("lbbox").querySelector(".ftbig"))return;if(e.key==="ArrowLeft")ftNav(1);else if(e.key==="ArrowRight")ftNav(-1);});
+/* Progreso → Fotos: todas las fotos del historial, de la más nueva a la más vieja, agrupadas por mes.
+   Las miniaturas se cargan al acercarse a la pantalla para no abrir cientos de fotos a la vez. */
+var ftIO=null;
+function renderFotos(){
+  var el=$("pgfot");if(!el)return;
+  if(!FT.ok){el.innerHTML='<div class="sec-h"><h3 style="font-size:1.05rem">Fotos</h3></div><p class="small muted">Este navegador no deja guardar fotos.</p>';return;}
+  var L=Object.keys(FT.has).filter(function(d){return /^\d{4}-\d\d-\d\d$/.test(d);}).sort().reverse();
+  var h='<div class="sec-h"><h3 style="font-size:1.05rem">Fotos</h3><span class="r eyebrow">'+(L.length?L.length+(L.length===1?' foto':' fotos'):'sin fotos')+'</span></div>';
+  if(!L.length){el.innerHTML=h+'<p class="small muted">Aquí se juntan las fotos que te tomes al terminar cada entreno. Cuando toques "Entreno completo", te sale el botón para tomarla.</p>';return;}
+  var cur="";h+='<p class="small muted">Tu historial de entrenos en fotos. Toca una para verla en grande.</p>';
+  L.forEach(function(d){var wd=fromIso(d),m=MES[wd.getMonth()]+" "+wd.getFullYear();
+    if(m!==cur){if(cur)h+='</div>';cur=m;h+='<h4 class="ftmh">'+m.charAt(0).toUpperCase()+m.slice(1)+'</h4><div class="ftgrid">';}
+    var k=dayKeyOf(wd),lbl=GDat(wd)[k]?(k==="sup"?"Cuerpo completo":SHORT[k]):"";
+    h+='<button type="button" class="ftg" data-ftg="'+d+'" aria-label="Foto del '+DAYS[wd.getDay()].n.toLowerCase()+' '+wd.getDate()+(lbl?', '+esc(lbl):'')+'"><img data-ftimg="'+d+'" alt=""'+(FT.url[d]?' src="'+FT.url[d]+'"':'')+'><span><b>'+DAYS[wd.getDay()].s+' '+wd.getDate()+'</b>'+(lbl?esc(lbl):'')+'</span></button>';});
+  el.innerHTML=h+'</div>';
+  if(ftIO)ftIO.disconnect();
+  var imgs=el.querySelectorAll("img[data-ftimg]");
+  if("IntersectionObserver" in window){ftIO=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isIntersecting){ftIO.unobserve(x.target);ftShow(x.target.dataset.ftimg);}});},{rootMargin:"300px"});imgs.forEach(function(im){ftIO.observe(im);});}
+  else imgs.forEach(function(im){ftShow(im.dataset.ftimg);});
+}
+$("pgfot").addEventListener("click",function(e){var b=e.target.closest("[data-ftg]");if(!b)return;
+  var g=Object.keys(FT.has).sort().reverse();ftOpen(b.dataset.ftg,g);});
 $("wofoot").addEventListener("change",function(e){var t=e.target;if(!t.matches("[data-ftin]")||roWo())return;var d=t.dataset.ftin,f=t.files&&t.files[0];t.value="";
   if(/^\d{4}-\d\d-\d\d$/.test(d))ftAdd(d,f);});
 $("wofoot").addEventListener("click",function(e){var b=e.target.closest("[data-ftv]");if(b){ftOpen(b.dataset.ftv);return;}
@@ -1983,7 +2011,7 @@ function ftSync(){
       });
     });});
     return chain.then(function(){ix.since=rem.since;ftIxSet(ix);});
-  }).then(function(){FT.busy=0;if(got&&view==="entreno")updWoStats();if(FT.again){FT.again=0;ftSoon();}},
+  }).then(function(){FT.busy=0;if(got)ftRefresh();if(FT.again){FT.again=0;ftSoon();}},
     function(){FT.busy=0;});
 }
 ftLoad();
