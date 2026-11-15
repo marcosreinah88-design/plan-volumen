@@ -151,7 +151,7 @@ function flush(k){
 function setSync(m){
   S.mode=m;var d=$("syncdot"),t=$("synctxt");
   d.classList.toggle("on",m==="on"||m==="busy");
-  t.textContent=m==="on"?(PWA?"Sincronizado":"Guardado"):m==="busy"?"Guardando…":PWA?"En tu equipo":"Este equipo";
+  t.textContent=m==="on"?(PWA?"Sincronizado":"Guardado"):m==="busy"?"Guardando…":PWA?(typeof ghOn==="function"&&ghOn()?"Sin sincronizar":"En tu equipo"):"Este equipo";
   $("syncpill").title=m==="local"?(PWA?"Tus registros se guardan en este equipo. Haz un respaldo en Progreso cada semana":"Tus registros se guardan solo en este navegador"):"Tus registros se guardan en tu cuenta y te siguen a cualquier dispositivo";
 }
 function dk(d){return "d-"+iso(d);}
@@ -1636,10 +1636,45 @@ function ghBoot(){
   }).catch(function(){});
 }
 function ghOn(){return PWA&&!!GH.tok;}
+/* historial corto de la sincronización (solo en este equipo, sin datos ni claves) para saber qué pasó si algo falla */
+function ghLogs(){try{var x=JSON.parse(localStorage.getItem("pvmgh:log")||"[]");return Array.isArray(x)?x.filter(function(r){return r&&typeof r.t==="number"&&typeof r.k==="string";}).slice(-40):[];}catch(e){return [];}}
+function ghLog(k,d){var L=ghLogs();L.push({t:Date.now(),k:String(k).slice(0,20),d:d==null?"":String(d).slice(0,30)});try{localStorage.setItem("pvmgh:log",JSON.stringify(L.slice(-40)));}catch(e){}}
+var GHLK={ok:"Sincronizó bien",error:"No pudo sincronizar",trabada:"Una sincronización se quedó colgada y se reinició",conectar:"Conectaste GitHub",desconectar:"Desconectaste GitHub",sinclave:"Se abrió sin clave de GitHub",persist:"Protección de datos"};
+var GHLD={"cifrado":"datos cifrados con otra clave","límite":"GitHub pidió esperar","gh 401":"clave no aceptada","gh 403":"GitHub rechazó","tiempo":"tardó demasiado","red":"sin internet","sí":"activada","no":"el sistema no la dio"};
+function ghLogHTML(){var L=ghLogs().slice(-12).reverse();if(!L.length)return "";
+  return '<details class="src-d"><summary>Historial de sincronización</summary><ul class="small muted" style="margin:6px 0 0;padding-left:18px">'+L.map(function(r){var dt=new Date(r.t);
+    return '<li>'+dt.getDate()+' '+MES3[dt.getMonth()]+' '+pad(dt.getHours())+':'+pad(dt.getMinutes())+' · '+esc(GHLK[r.k]||r.k)+(r.d?' ('+esc(GHLD[r.d]||r.d)+')':'')+'</li>';}).join("")+'</ul></details>';}
+/* el iPhone puede borrar los datos de una app web cuando le falta espacio, y con ellos tu clave de GitHub.
+   Pedir almacenamiento persistente lo evita en la app instalada. */
+function ghPersist(){
+  if(!PWA||!(navigator.storage&&navigator.storage.persist))return;
+  navigator.storage.persisted().then(function(p){if(p){GH.pers=1;return;}
+    return navigator.storage.persist().then(function(ok){GH.pers=ok?1:0;if(ok||ghGet("pers")!=="no")ghLog("persist",ok?"sí":"no");ghSet("pers",ok?"si":"no");});
+  }).catch(function(){});
+}
+/* si quedan registros pero falta la clave, algo la borró: se anota para saberlo */
+function ghWipeCheck(){
+  if(!PWA||GH.tok)return;
+  var had=false;try{had=Object.keys(allDocs()).length>0;}catch(e){}
+  var L=ghLogs();if(had&&ghGet("id")&&!(L.length&&L[L.length-1].k==="sinclave"))ghLog("sinclave");
+}
+/* fetch con tiempo límite: en el iPhone, si la app se va a segundo plano a media sincronización, la petición
+   puede quedarse colgada para siempre y la sincronización ya no vuelve a correr (15 nov 2026) */
+function tFetch(u,o,ms){
+  var c=window.AbortController?new AbortController():null,tm;o=o||{};if(c)o.signal=c.signal;
+  return new Promise(function(ok,no){
+    tm=setTimeout(function(){if(c)try{c.abort();}catch(e){}var e=new Error("tiempo");e.slow=1;no(e);},ms||30000);
+    fetch(u,o).then(function(r){clearTimeout(tm);ok(r);},function(e){clearTimeout(tm);no(e);});
+  });
+}
 function ghApi(path,method,body){
   if(!/^\/gists(\/[0-9a-f]{20,40})?(\?per_page=100(&since=\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ)?(&page=\d{1,2})?)?$/.test(path))return Promise.reject(new Error("ruta"));
-  return fetch("https://api.github.com"+path,{method:method||"GET",cache:"no-store",credentials:"omit",referrerPolicy:"no-referrer",headers:{"Authorization":"Bearer "+GH.tok,"Accept":"application/vnd.github+json","Content-Type":"application/json"},body:body?JSON.stringify(body):undefined})
-    .then(function(r){if(!r.ok){var e=new Error("gh "+r.status);e.status=r.status;throw e;}return r.json();});
+  return tFetch("https://api.github.com"+path,{method:method||"GET",cache:"no-store",credentials:"omit",referrerPolicy:"no-referrer",headers:{"Authorization":"Bearer "+GH.tok,"Accept":"application/vnd.github+json","Content-Type":"application/json"},body:body?JSON.stringify(body):undefined},method&&method!=="GET"?45000:30000)
+    .then(function(r){if(!r.ok){var e=new Error("gh "+r.status);e.status=r.status;
+      /* 403 también es "espera un rato" (límite de GitHub), no solo clave mala: no hay que pedir la clave otra vez por eso */
+      if(r.status===429||(r.status===403&&(r.headers.get("x-ratelimit-remaining")==="0"||r.headers.get("retry-after"))))e.rl=1;
+      return r.text().then(function(t){if(r.status===403&&/rate limit|abuse/i.test(t||""))e.rl=1;throw e;},function(){throw e;});}
+      return r.json();});
 }
 /* cifrado de tus datos en GitHub: AES-GCM 256 con una llave que sale de tu clave (PBKDF2, 310 000 vueltas).
    Sin tu clave nadie puede leerlos, y si alguien los altera, la app lo detecta y no los usa. */
@@ -1667,7 +1702,7 @@ function ghText(f){
   if(!f.truncated)return Promise.resolve(f.content||"");
   var u;try{u=new URL(f.raw_url);}catch(e){return Promise.resolve(null);}
   if(u.protocol!=="https:"||u.hostname!=="gist.githubusercontent.com")return Promise.resolve(null);
-  return fetch(u.href,{cache:"no-store",credentials:"omit",referrerPolicy:"no-referrer"}).then(function(r){return r.ok?r.text():null;});
+  return tFetch(u.href,{cache:"no-store",credentials:"omit",referrerPolicy:"no-referrer"},45000).then(function(r){return r.ok?r.text():null;});
 }
 /* lee lo que hay en GitHub: el archivo cifrado y, si todavía existe, el viejo sin cifrar (se borra al guardar) */
 function ghRead(g){
@@ -1692,11 +1727,15 @@ function ghFind(){
       return ghApi("/gists","POST",{description:GH.desc,public:false,files:files});}).then(function(n){ghSet("id",n.id);return n;});
   });
 }
-function ghSoon(){if(!ghOn())return;clearTimeout(GH.timer);GH.timer=setTimeout(ghSync,2500);}
+/* espera 5 s sin cambios antes de subir: al marcar series seguidas se junta todo en una sola subida y GitHub no nos frena por exceso de peticiones */
+function ghSoon(){if(!ghOn())return;clearTimeout(GH.timer);GH.timer=setTimeout(ghSync,5000);}
 function ghSync(manual){
   if(!ghOn())return;
-  if(GH.busy){GH.again=1;return;}
-  GH.busy=1;setSync("busy");
+  /* si una vuelta lleva más de 2 min, se da por perdida y empieza otra (antes se quedaba trabada hasta cerrar la app) */
+  if(GH.busy&&Date.now()-(GH.busyAt||0)<120000){GH.again=1;if(manual)toast("Ya estoy sincronizando…");return;}
+  if(GH.busy)ghLog("trabada");
+  var run=GH.run=(GH.run||0)+1;
+  GH.busy=1;GH.busyAt=Date.now();setSync("busy");
   var G=null;
   var RD=null;
   ghFind().then(function(g){G=g;return ghRead(g);}).then(function(rd){RD=rd;var rem=rd.docs;
@@ -1718,19 +1757,28 @@ function ghSync(manual){
       if(!Object.keys(files).length)return changed;
       return ghApi("/gists/"+ghGet("id"),"PATCH",{files:files}).then(function(){return changed;});});
   }).then(function(changed){
-    GH.busy=0;GH.err="";GH.dec=0;ghSet("last",String(Date.now()));setSync("on");ftSoon();
+    if(run!==GH.run)return;
+    if(GH.err||!+ghGet("last"))ghLog("ok");
+    GH.busy=0;GH.err="";GH.dec=0;ghSet("last",String(Date.now()));setSync("on");if(manual||Date.now()-(FT.at||0)>90000)ftSoon();
     if(changed){var a=document.activeElement;if(!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)))renderAll();}
     else if(view==="ajustes")renderBackup();
     if(manual)toast("Sincronizado");
     if(GH.again){GH.again=0;ghSoon();}
   },function(e){
+    if(run!==GH.run)return;
     GH.busy=0;setSync("local");
     GH.dec=0;
+    var why=e&&e.dec?"cifrado":e&&e.rl?"límite":e&&e.status?"gh "+e.status:e&&e.slow?"tiempo":"red";
+    if(GH.lastWhy!==why||!GH.err)ghLog("error",why);GH.lastWhy=why;
     if(e&&e.dec){GH.dec=1;GH.err="Tus datos en GitHub están cifrados con otra clave (o alguien los alteró), así que no los abrí ni los toqué. Si cambiaste tu clave, pega la anterior; si ya no la tienes, usa el botón de abajo para reemplazarlos con los de este equipo.";}
-    else if(e&&(e.status===401||e.status===403)){GH.err="GitHub no aceptó tu clave. Crea una nueva (con permiso gist) y pégala otra vez.";}
+    else if(e&&e.rl){GH.err="GitHub pidió esperar un rato. Se reintenta solo; no tienes que volver a pegar tu clave.";}
+    else if(e&&e.status===401){GH.err="GitHub no aceptó tu clave (la borraron o caducó). Crea una nueva con permiso gist y pégala otra vez.";}
+    else if(e&&e.status===403){GH.err="GitHub rechazó la petición. Revisa que tu clave tenga el permiso gist. Si el mensaje sigue en unos minutos, crea una nueva.";}
+    else if(e&&e.status>=500){GH.err="GitHub está fallando en este momento. Se reintenta solo; tus registros se quedan aquí mientras.";}
     else GH.err="No hay conexión con GitHub. Lo que anotes se guarda aquí y se sube cuando vuelva el internet.";
-    if(manual||e&&e.status)toast(GH.err);
+    if(manual||e&&e.status===401||e&&e.dec)toast(GH.err);
     if(view==="ajustes")renderBackup();
+    if(GH.again){GH.again=0;clearTimeout(GH.timer);GH.timer=setTimeout(ghSync,15000);}
   });
 }
 /* ================= avisos al celular =================
@@ -1803,19 +1851,19 @@ document.addEventListener("click",function(e){var b=e.target.closest("[data-av]"
 function ghCard(){
   if(!ghGet("tok"))return '<div class="ghs gfirst"><p class="small muted">Para que lo que anotes en un equipo aparezca en el otro, conecta tu GitHub. Se hace una sola vez en cada equipo:</p>'+
     '<ol class="small"><li>Toca <a href="https://github.com/settings/tokens/new?scopes=gist&amp;description=Plan%20de%20Volumen" target="_blank" rel="noopener">Crear clave en GitHub</a> (ya trae marcado solo el permiso <b>gist</b>).</li><li>En <b>Expiration</b> elige <b>No expiration</b>, baja y toca <b>Generate token</b>.</li><li>Copia la clave (empieza con <b>ghp_</b>) y pégala aquí. Guárdala en Notas para pegarla también en el otro equipo.</li></ol>'+
-    '<form class="ghf" id="ghf"><input id="ghtok" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ghp_…" aria-label="Clave de GitHub"><button class="btn pri" type="submit">Conectar</button></form></div>';
+    '<form class="ghf" id="ghf"><input id="ghtok" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ghp_…" aria-label="Clave de GitHub"><button class="btn pri" type="submit">Conectar</button></form>'+ghLogHTML()+'</div>';
   var L=+ghGet("last")||0;
   return '<div class="ghs gfirst">'+(GH.err?'<p class="note">'+GH.err+'</p>':'<p class="small" style="color:var(--ok)">Conectado'+(L?' · última vez '+pad(new Date(L).getHours())+':'+pad(new Date(L).getMinutes()):'')+'</p>')+
-    '<p class="small muted">Se sincroniza solo cada vez que anotas algo y al abrir la app. Tus datos viajan y se guardan en GitHub cifrados con tu clave.</p>'+(GH.dec?'<div class="gbtns"><button class="btn ghost" type="button" data-gh="reset">Reemplazar con los datos de este equipo</button></div>':'')+'<div class="gbtns"><button class="btn ghost" type="button" data-gh="now">Sincronizar ahora</button><button class="btn ghost" type="button" data-gh="off">Desconectar</button></div></div>';
+    '<p class="small muted">Se sincroniza solo cada vez que anotas algo y al abrir la app. Tus datos viajan y se guardan en GitHub cifrados con tu clave.</p>'+(GH.dec?'<div class="gbtns"><button class="btn ghost" type="button" data-gh="reset">Reemplazar con los datos de este equipo</button></div>':'')+'<div class="gbtns"><button class="btn ghost" type="button" data-gh="now">Sincronizar ahora</button><button class="btn ghost" type="button" data-gh="off">Desconectar</button></div>'+ghLogHTML()+'</div>';
 }
 document.addEventListener("submit",function(e){if(e.target.id!=="ghf")return;e.preventDefault();var v=($("ghtok").value||"").trim();
   if(!/^(ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{50,100})$/.test(v)){toast("Esa no parece una clave de GitHub (empieza con ghp_)");return;}
-  $("ghtok").value="";ghSet("tok",v);ghSet("id","");ftReset();GH.err="";GH.dec=0;renderBackup();ghSync(true);});
+  $("ghtok").value="";ghSet("tok",v);ghSet("id","");ftReset();GH.err="";GH.dec=0;GH.busy=0;ghLog("conectar");ghPersist();renderBackup();ghSync(true);});
 document.addEventListener("click",function(e){var b=e.target.closest("[data-gh]");if(!b)return;
   if(b.dataset.gh==="now")ghSync(true);
   else if(b.dataset.gh==="reset"){if(b.dataset.arm!=="1"){b.dataset.arm="1";b.textContent="¿Seguro? Lo de GitHub se reemplaza. Toca otra vez";return;}
     var id=ghGet("id");if(!id)return;ghSeal(allDocs()).then(function(c){var f={};f[GH.fenc]={content:c};f[GH.fname]=null;return ghApi("/gists/"+id,"PATCH",{files:f});}).then(function(){GH.dec=0;GH.err="";ghSync(true);},function(){toast("No se pudo. Revisa tu internet");});}
-  else if(b.dataset.gh==="off"){ghSet("tok","");ghSet("id","");ftReset();ghSet("last","");GH.err="";setSync("local");renderBackup();toast("Desconectado. Tus registros siguen en este equipo");}});
+  else if(b.dataset.gh==="off"){ghLog("desconectar");ghSet("tok","");ghSet("id","");ftReset();ghSet("last","");GH.err="";setSync("local");renderBackup();toast("Desconectado. Tus registros siguen en este equipo");}});
 document.addEventListener("visibilitychange",function(){if(!document.hidden&&ghOn())ghSync();});
 window.addEventListener("online",function(){if(ghOn())ghSync();});
 setInterval(function(){if(!document.hidden&&ghOn())ghSync();},120000);
@@ -1963,7 +2011,7 @@ function ftList(ix){
 }
 function ftRaw(u){var x;try{x=new URL(u);}catch(e){return Promise.resolve(null);}
   if(x.protocol!=="https:"||x.hostname!=="gist.githubusercontent.com")return Promise.resolve(null);
-  return fetch(x.href,{cache:"no-store",credentials:"omit",referrerPolicy:"no-referrer"}).then(function(r){return r.ok?r.text():null;});}
+  return tFetch(x.href,{cache:"no-store",credentials:"omit",referrerPolicy:"no-referrer"},45000).then(function(r){return r.ok?r.text():null;});}
 function ftParse(txt,w){
   if(txt==null)return null;if(txt.length>12*1048576)throw new Error("grande");
   var C=JSON.parse(txt);if(!C||C.app!=="plan-volumen"||C.kind!=="fotos"||C.w!==w||!C.items||typeof C.items!=="object"||Array.isArray(C.items))throw new Error("formato");
@@ -1972,7 +2020,8 @@ function ftParse(txt,w){
     it[d]=x.del?{t:x.t,del:1}:{t:x.t,iv:x.iv,ct:x.ct};});
   return it;
 }
-function ftSoon(){if(!ghOn())return;clearTimeout(FT.timer);FT.timer=setTimeout(ftSync,1500);}
+/* las fotos se revisan como mucho cada 90 s desde la sincronización de registros (menos peticiones a GitHub); al tomar o quitar una foto va de inmediato */
+function ftSoon(){if(!ghOn())return;FT.at=Date.now();clearTimeout(FT.timer);FT.timer=setTimeout(ftSync,1500);}
 function ftSync(){
   if(!ghOn()||!FT.ok)return;
   if(FT.busy){FT.again=1;return;}FT.busy=1;
@@ -2238,6 +2287,6 @@ $("pgdias").addEventListener("click",function(e){var c=e.target.closest(".dc[dat
 if(modeOf(TODAY)==="sup")wsel="sup";if(dayRK(TODAY))wsel=dayRK(TODAY);
 renderAll();show(started?"entreno":"hoy");
 connect();
-ghBoot().then(function(){if(ghOn())ghSync();if(view==="ajustes")renderAjustes();});
+ghBoot().then(function(){ghWipeCheck();if(ghOn()){ghPersist();ghSync();}if(view==="ajustes")renderAjustes();});
 setTimeout(mdCheck,2500);
 })();
