@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-B9tOdJwmmzLqornNqcMg2ot4g8NBZsGH299DwXMlb8c=' 'sha256-zTy0ZjxcjjGgxbevhZcx78LFMUbIS6A47qPJEONL8a0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://gist.githubusercontent.com https://generativelanguage.googleapis.com; manifest-src 'self'; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-f3jsGcR+OTeFAC4IWH+AIE8SyAB+9DTlQy0z+8u2gNU=' 'sha256-zTy0ZjxcjjGgxbevhZcx78LFMUbIS6A47qPJEONL8a0='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://gist.githubusercontent.com https://generativelanguage.googleapis.com; manifest-src 'self'; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <!--pv-app-->
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -722,18 +722,34 @@ button.pill{appearance:none;background:transparent;cursor:pointer;font-family:va
 .jug .jpct{font:700 15px var(--display);fill:var(--fg);paint-order:stroke;stroke:var(--surface);stroke-width:3px;letter-spacing:.02em}
 .jug .jpu{font:600 7px var(--mono);fill:var(--fg);paint-order:stroke;stroke:var(--surface);stroke-width:2.5px;letter-spacing:.08em}
 .jug.full .jo,.jug.full .jlip,.jug.full .jrim{stroke:var(--c-l)}
-.jug .dome{fill:color-mix(in srgb,var(--c-l) 80%,#fff);animation:jdome 1.6s ease-in-out infinite alternate}
+.jug .crest{fill:color-mix(in srgb,var(--c-l) 82%,#fff);animation:jdome 1.6s ease-in-out infinite alternate}
 @keyframes jdome{from{transform:translateY(0)}to{transform:translateY(-1.5px)}}
-.jug .stream{fill:none;stroke:var(--c-l);stroke-width:3.5;stroke-linecap:round;stroke-dasharray:7 6;animation:jflow .55s linear infinite;opacity:.9}
-@keyframes jflow{to{stroke-dashoffset:-13}}
-.jug .drop{fill:var(--c-l);animation:jdrop 1.1s ease-in infinite}
-.jug .d2{animation-delay:.35s}.jug .d3{animation-delay:.7s}
-@keyframes jdrop{0%{transform:translateY(-30px);opacity:0}20%{opacity:1}100%{transform:translateY(24px);opacity:0}}
+.jug .strm{fill:var(--c-l);opacity:.92}
+.jug .sflow{fill:none;stroke:#fff;stroke-opacity:.55;stroke-width:1.1;stroke-linecap:round;stroke-dasharray:5 11;animation:jflow .5s linear infinite}
+.jug .big+.sflow{stroke-width:2;stroke-dasharray:8 10;animation-duration:.35s}
+@keyframes jflow{to{stroke-dashoffset:-16}}
+.jug .drip{fill:none;stroke:var(--c-l);stroke-opacity:.7;stroke-width:1.6;stroke-linecap:round}
+.jug .dripd{fill:var(--c-l);animation:jdrip 1.8s ease-in infinite}
+@keyframes jdrip{0%,30%{transform:translateY(0);opacity:1}100%{transform:translateY(86px);opacity:0}}
+.jug .spl,.jug .spr{fill:var(--c-l);animation:jspl 1.1s ease-out infinite;opacity:0}
+.jug .spr{fill:color-mix(in srgb,var(--c-l) 70%,#fff);animation-duration:1.4s}
+@keyframes jspl{0%{transform:translate(0,0);opacity:1}45%{transform:translate(calc(var(--dx)*.55),var(--dy));opacity:1}100%{transform:translate(var(--dx),4px);opacity:0}}
 .jug .puddle{fill:color-mix(in srgb,var(--c-l) 50%,transparent);animation:jpud 2.2s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:center}
-@keyframes jpud{from{transform:scaleX(.9)}to{transform:scaleX(1.08)}}
+@keyframes jpud{from{transform:scaleX(.94)}to{transform:scaleX(1.05)}}
+.jug .rip{fill:none;stroke:var(--c-l);stroke-width:1;animation:jrip 1.6s ease-out infinite;transform-box:fill-box;transform-origin:center}
+.jug .r2{animation-delay:.8s}
+@keyframes jrip{from{transform:scale(.3);opacity:.9}to{transform:scale(1.5);opacity:0}}
+.jug .casc{fill:none;stroke:var(--c-l);stroke-width:4.5;stroke-linecap:round;opacity:.85}
+.jug .cflow{fill:none;stroke:#fff;stroke-opacity:.5;stroke-width:1.2;stroke-linecap:round;stroke-dasharray:6 12;animation:jflow .4s linear infinite}
+.jug .cflow.c2{animation-duration:.5s}
 .jug.over svg{animation:jwob 3s ease-in-out infinite;transform-origin:50% 100%}
 @keyframes jwob{0%,100%{rotate:0deg}50%{rotate:-3deg}}
-@media (prefers-reduced-motion:reduce){.jug .w1,.jug .w2,.jug .stream,.jug .drop,.jug .puddle,.jug .bub,.jug .dome,.jug.over svg{animation:none}.jug .jw{transition:none}}
+.jug.mega svg{animation:jshk 1.4s ease-in-out infinite}
+@keyframes jshk{0%,100%{rotate:0deg}20%{rotate:-4deg}40%{rotate:2.5deg}60%{rotate:-3deg}80%{rotate:1.5deg}}
+.jug.mega .crest{animation:jcrest .9s ease-in-out infinite alternate}
+@keyframes jcrest{from{transform:translateY(0) scaleY(1)}to{transform:translateY(-2px) scaleY(1.06)}}
+.jug.full.mega .jl b{color:var(--c-a)}
+@media (prefers-reduced-motion:reduce){.jug .w1,.jug .w2,.jug .sflow,.jug .cflow,.jug .dripd,.jug .rip,.jug .puddle,.jug .bub,.jug .crest,.jug.over svg,.jug.mega svg{animation:none}.jug .spl,.jug .spr,.jug .rip{display:none}.jug .jw{transition:none}}
 .swb{justify-self:start;gap:6px;margin-top:2px}
 .swb svg{width:15px;height:15px}
 .swl{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow:auto;padding:2px;margin-top:2px}
@@ -1871,8 +1887,24 @@ function jugSVG(ml){
   var wave='M-80 0 Q-70 -4 -60 0 T-40 0 T-20 0 T0 0 T20 0 T40 0 T60 0 T80 0 T100 0 T120 0 T140 0 T160 0 V130 H-80 Z';
   var ticks=[1,2].map(function(n){var ty=bot-(n*1000/WGOAL)*(bot-top);return '<line class="jt" x1="84" x2="96" y1="'+ty+'" y2="'+ty+'"/>';}).join("");
   var bub=f>0.08?[[40,60,0],[62,85,.8],[78,45,1.6],[52,100,2.3]].map(function(b){return '<circle class="bub" cx="'+b[0]+'" cy="'+b[1]+'" r="'+(1.6+((b[0]%3)*.5))+'" style="animation-delay:'+b[2]+'s"/>';}).join(""):'';
-  var spill=over?'<g class="spill"><ellipse class="dome" cx="56" cy="22" rx="34" ry="5"/><path class="stream" d="M10 13 C-1 32 -2 80 2 146"/><circle class="drop d1" cx="1" cy="70" r="2.4"/><circle class="drop d2" cx="3" cy="100" r="2"/><circle class="drop d3" cx="0" cy="125" r="2.2"/><ellipse class="puddle" cx="26" cy="148" rx="'+Math.min(40,18+extra/40)+'" ry="4"/></g>':'';
-  return '<div class="jug'+(over?' over':'')+(f>=1?' full':'')+'" role="img" aria-label="Jarra de agua: '+fmt.format(ml)+' de '+fmt.format(WGOAL)+' ml'+(over?', te pasaste '+fmt.format(extra)+' ml':'')+'">'+
+  var mega=over&&extra>=1000,sp=function(c,x,y,r,dx,dy,dl){return '<circle class="'+c+'" cx="'+x+'" cy="'+y+'" r="'+r+'" style="--dx:'+dx+'px;--dy:'+dy+'px;animation-delay:'+dl+'s"/>';};
+  /* desborde: con poco de más el agua rebasa el pico en un chorro; con 1 litro o más se derrama por todos lados */
+  var spill=!over?'':mega?'<g class="spill mega">'+
+      '<path class="casc" d="M24 29 C19 44 15.5 54 15.5 70 C15.5 104 19 124 28 136"/><path class="casc" d="M93 19 C99 34 104.5 46 104.5 70 C104.5 104 101 124 92 136"/><path class="cflow" d="M24 29 C19 44 15.5 54 15.5 70 C15.5 104 19 124 28 136"/><path class="cflow c2" d="M93 19 C99 34 104.5 46 104.5 70 C104.5 104 101 124 92 136"/>'+
+      '<ellipse class="puddle" cx="55" cy="149" rx="'+Math.min(80,58+(extra-1000)/50)+'" ry="6.5"/><ellipse class="rip" cx="55" cy="149" rx="40" ry="4"/><ellipse class="rip r2" cx="-4" cy="149" rx="14" ry="2.5"/>'+
+      '<path class="crest" d="M9 13 Q14 4 26 6 Q34 -1 46 4 Q56 -3 66 3 Q78 -2 86 6 Q96 8 94 19 Q60 24 30 21 Q18 19 9 13 Z"/>'+
+      '<path class="strm big" d="M11 9 C-4 10 -13 44 -12 148 H-3 C-4 66 0 26 14 15 Z"/><path class="sflow" d="M7 12 C-3 20 -8 54 -7.5 142"/>'+
+      sp('spr',30,4,2,-6,-12,0)+sp('spr',60,1,1.8,3,-14,.4)+sp('spr',84,5,2.2,8,-10,.8)+sp('spr',46,2,1.5,-2,-16,1.2)+
+      sp('spl',-8,146,2.2,-14,-10,0)+sp('spl',-6,146,1.8,10,-13,.3)+sp('spl',22,146,2,-10,-9,.6)+sp('spl',90,146,2.2,14,-11,.15)+sp('spl',98,146,1.6,-8,-8,.5)+sp('spl',-4,146,1.6,-20,-6,.75)+
+    '</g>'
+    :'<g class="spill">'+
+      '<path class="crest" d="M11 13 Q15 9 28 8.5 Q60 5 87 12.5 Q95 15.5 92 19.5 Q60 23 30 21 Q19 18 11 13 Z"/>'+
+      '<path class="drip" d="M23 27 C20 36 18 46 17.6 58"/><circle class="dripd" cx="17.6" cy="60" r="1.8"/>'+
+      '<ellipse class="puddle" cx="16" cy="149" rx="'+Math.min(40,16+extra/30)+'" ry="4"/><ellipse class="rip" cx="0" cy="148" rx="12" ry="2.2"/>'+
+      '<path class="strm" d="M11 11 C2 14 -1.5 42 -1.2 147 H1.6 C1.8 62 4 24 13.5 15.5 Z"/><path class="sflow" d="M9 13.5 C2.5 22 0.3 52 0.2 142"/>'+
+      sp('spl',0,146,1.5,-8,-7,0)+sp('spl',1,146,1.3,7,-8,.35)+sp('spl',0,146,1.1,-4,-10,.7)+
+    '</g>';
+  return '<div class="jug'+(over?' over':'')+(mega?' mega':'')+(f>=1?' full':'')+'" role="img" aria-label="Jarra de agua: '+fmt.format(ml)+' de '+fmt.format(WGOAL)+' ml'+(over?', te pasaste '+fmt.format(extra)+' ml':'')+'">'+
     '<svg viewBox="-10 0 140 156" aria-hidden="true"><defs>'+
       '<clipPath id="jugclip"><path d="'+body+'"/></clipPath>'+
       '<linearGradient id="jwg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="wg0"/><stop offset="1" class="wg1"/></linearGradient>'+
@@ -3353,7 +3385,7 @@ function renderGuia(){
 
 /* ================= navegación ================= */
 /* ================= AJUSTES ================= */
-var APPV="2026.11.15-77f90c";
+var APPV="2026.11.15-4cd0de";
 var AVCAT=[["meal","Comidas","A la hora de cada comida"],["cre","Creatina","Al terminar el entreno (domingo: con el desayuno)"],["gym","Gym","30 minutos antes de entrenar"],["med","Medicamento","15 minutos antes del desayuno"],["peso","Pésate","Lunes, miércoles y viernes, 25 min antes del desayuno"],["cocina","Batch y prep","Domingo 12:00 y miércoles 21:30"],["sueno","Dormir","30 minutos antes de tu hora de dormir"]];
 function avCatOn(c){var C=sget("cfg")||{};return !(C.avo&&C.avo[c]===false);}
 function ajRow(h,t,body){return '<div class="card ajc" style="display:grid;gap:10px"><div class="sec-h"><h3 style="font-size:1.05rem">'+h+'</h3>'+(t?'<span class="r eyebrow">'+t+'</span>':'')+'</div>'+body+'</div>';}

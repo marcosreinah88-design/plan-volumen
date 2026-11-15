@@ -553,8 +553,24 @@ function jugSVG(ml){
   var wave='M-80 0 Q-70 -4 -60 0 T-40 0 T-20 0 T0 0 T20 0 T40 0 T60 0 T80 0 T100 0 T120 0 T140 0 T160 0 V130 H-80 Z';
   var ticks=[1,2].map(function(n){var ty=bot-(n*1000/WGOAL)*(bot-top);return '<line class="jt" x1="84" x2="96" y1="'+ty+'" y2="'+ty+'"/>';}).join("");
   var bub=f>0.08?[[40,60,0],[62,85,.8],[78,45,1.6],[52,100,2.3]].map(function(b){return '<circle class="bub" cx="'+b[0]+'" cy="'+b[1]+'" r="'+(1.6+((b[0]%3)*.5))+'" style="animation-delay:'+b[2]+'s"/>';}).join(""):'';
-  var spill=over?'<g class="spill"><ellipse class="dome" cx="56" cy="22" rx="34" ry="5"/><path class="stream" d="M10 13 C-1 32 -2 80 2 146"/><circle class="drop d1" cx="1" cy="70" r="2.4"/><circle class="drop d2" cx="3" cy="100" r="2"/><circle class="drop d3" cx="0" cy="125" r="2.2"/><ellipse class="puddle" cx="26" cy="148" rx="'+Math.min(40,18+extra/40)+'" ry="4"/></g>':'';
-  return '<div class="jug'+(over?' over':'')+(f>=1?' full':'')+'" role="img" aria-label="Jarra de agua: '+fmt.format(ml)+' de '+fmt.format(WGOAL)+' ml'+(over?', te pasaste '+fmt.format(extra)+' ml':'')+'">'+
+  var mega=over&&extra>=1000,sp=function(c,x,y,r,dx,dy,dl){return '<circle class="'+c+'" cx="'+x+'" cy="'+y+'" r="'+r+'" style="--dx:'+dx+'px;--dy:'+dy+'px;animation-delay:'+dl+'s"/>';};
+  /* desborde: con poco de más el agua rebasa el pico en un chorro; con 1 litro o más se derrama por todos lados */
+  var spill=!over?'':mega?'<g class="spill mega">'+
+      '<path class="casc" d="M24 29 C19 44 15.5 54 15.5 70 C15.5 104 19 124 28 136"/><path class="casc" d="M93 19 C99 34 104.5 46 104.5 70 C104.5 104 101 124 92 136"/><path class="cflow" d="M24 29 C19 44 15.5 54 15.5 70 C15.5 104 19 124 28 136"/><path class="cflow c2" d="M93 19 C99 34 104.5 46 104.5 70 C104.5 104 101 124 92 136"/>'+
+      '<ellipse class="puddle" cx="55" cy="149" rx="'+Math.min(80,58+(extra-1000)/50)+'" ry="6.5"/><ellipse class="rip" cx="55" cy="149" rx="40" ry="4"/><ellipse class="rip r2" cx="-4" cy="149" rx="14" ry="2.5"/>'+
+      '<path class="crest" d="M9 13 Q14 4 26 6 Q34 -1 46 4 Q56 -3 66 3 Q78 -2 86 6 Q96 8 94 19 Q60 24 30 21 Q18 19 9 13 Z"/>'+
+      '<path class="strm big" d="M11 9 C-4 10 -13 44 -12 148 H-3 C-4 66 0 26 14 15 Z"/><path class="sflow" d="M7 12 C-3 20 -8 54 -7.5 142"/>'+
+      sp('spr',30,4,2,-6,-12,0)+sp('spr',60,1,1.8,3,-14,.4)+sp('spr',84,5,2.2,8,-10,.8)+sp('spr',46,2,1.5,-2,-16,1.2)+
+      sp('spl',-8,146,2.2,-14,-10,0)+sp('spl',-6,146,1.8,10,-13,.3)+sp('spl',22,146,2,-10,-9,.6)+sp('spl',90,146,2.2,14,-11,.15)+sp('spl',98,146,1.6,-8,-8,.5)+sp('spl',-4,146,1.6,-20,-6,.75)+
+    '</g>'
+    :'<g class="spill">'+
+      '<path class="crest" d="M11 13 Q15 9 28 8.5 Q60 5 87 12.5 Q95 15.5 92 19.5 Q60 23 30 21 Q19 18 11 13 Z"/>'+
+      '<path class="drip" d="M23 27 C20 36 18 46 17.6 58"/><circle class="dripd" cx="17.6" cy="60" r="1.8"/>'+
+      '<ellipse class="puddle" cx="16" cy="149" rx="'+Math.min(40,16+extra/30)+'" ry="4"/><ellipse class="rip" cx="0" cy="148" rx="12" ry="2.2"/>'+
+      '<path class="strm" d="M11 11 C2 14 -1.5 42 -1.2 147 H1.6 C1.8 62 4 24 13.5 15.5 Z"/><path class="sflow" d="M9 13.5 C2.5 22 0.3 52 0.2 142"/>'+
+      sp('spl',0,146,1.5,-8,-7,0)+sp('spl',1,146,1.3,7,-8,.35)+sp('spl',0,146,1.1,-4,-10,.7)+
+    '</g>';
+  return '<div class="jug'+(over?' over':'')+(mega?' mega':'')+(f>=1?' full':'')+'" role="img" aria-label="Jarra de agua: '+fmt.format(ml)+' de '+fmt.format(WGOAL)+' ml'+(over?', te pasaste '+fmt.format(extra)+' ml':'')+'">'+
     '<svg viewBox="-10 0 140 156" aria-hidden="true"><defs>'+
       '<clipPath id="jugclip"><path d="'+body+'"/></clipPath>'+
       '<linearGradient id="jwg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="wg0"/><stop offset="1" class="wg1"/></linearGradient>'+
