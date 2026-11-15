@@ -549,11 +549,11 @@ function addWater(v){var dd=dayDoc(selDay),n=Math.max(0,Math.min(10000,waterMl(d
 /* jarra: se llena hacia la meta y se derrama cuando la pasas */
 function jugSVG(ml){
   var f=Math.min(1,ml/WGOAL),over=ml>WGOAL,top=26,bot=138,y=bot-f*(bot-top),extra=ml-WGOAL;
-  var body='M28 20 C24 34 18 46 18 70 C18 104 22 124 30 133 Q35 138 46 138 H74 Q85 138 90 133 C98 124 102 104 102 70 C102 46 96 34 92 20 Z';
+  var body='M11 13 C17 17 23 23 24 31 C20 44 18 54 18 70 C18 104 22 124 30 133 Q35 138 46 138 H74 Q85 138 90 133 C98 124 102 104 102 70 C102 46 96 34 92 20 Q60 15 35 17 C27 16 18 13.5 11 13 Z';
   var wave='M-80 0 Q-70 -4 -60 0 T-40 0 T-20 0 T0 0 T20 0 T40 0 T60 0 T80 0 T100 0 T120 0 T140 0 T160 0 V130 H-80 Z';
   var ticks=[1,2].map(function(n){var ty=bot-(n*1000/WGOAL)*(bot-top);return '<line class="jt" x1="84" x2="96" y1="'+ty+'" y2="'+ty+'"/>';}).join("");
   var bub=f>0.08?[[40,60,0],[62,85,.8],[78,45,1.6],[52,100,2.3]].map(function(b){return '<circle class="bub" cx="'+b[0]+'" cy="'+b[1]+'" r="'+(1.6+((b[0]%3)*.5))+'" style="animation-delay:'+b[2]+'s"/>';}).join(""):'';
-  var spill=over?'<g class="spill"><ellipse class="dome" cx="56" cy="22" rx="34" ry="5"/><path class="stream" d="M9 11 C-2 30 -2 80 2 146"/><circle class="drop d1" cx="1" cy="70" r="2.4"/><circle class="drop d2" cx="3" cy="100" r="2"/><circle class="drop d3" cx="0" cy="125" r="2.2"/><ellipse class="puddle" cx="26" cy="148" rx="'+Math.min(40,18+extra/40)+'" ry="4"/></g>':'';
+  var spill=over?'<g class="spill"><ellipse class="dome" cx="56" cy="22" rx="34" ry="5"/><path class="stream" d="M10 13 C-1 32 -2 80 2 146"/><circle class="drop d1" cx="1" cy="70" r="2.4"/><circle class="drop d2" cx="3" cy="100" r="2"/><circle class="drop d3" cx="0" cy="125" r="2.2"/><ellipse class="puddle" cx="26" cy="148" rx="'+Math.min(40,18+extra/40)+'" ry="4"/></g>':'';
   return '<div class="jug'+(over?' over':'')+(f>=1?' full':'')+'" role="img" aria-label="Jarra de agua: '+fmt.format(ml)+' de '+fmt.format(WGOAL)+' ml'+(over?', te pasaste '+fmt.format(extra)+' ml':'')+'">'+
     '<svg viewBox="-10 0 140 156" aria-hidden="true"><defs>'+
       '<clipPath id="jugclip"><path d="'+body+'"/></clipPath>'+
@@ -564,7 +564,7 @@ function jugSVG(ml){
     '<path class="jh2" d="M97 40 C124 40 126 104 98 106"/><path class="jh" d="M97 40 C124 40 126 104 98 106"/><path class="jhw" clip-path="url(#jhclip)" d="M97 40 C124 40 126 104 98 106"/><path class="jhs" d="M108 50 C116 58 117 86 110 96"/>'+
     '<path class="jglass" d="'+body+'"/>'+
     '<g clip-path="url(#jugclip)"><g class="jw" style="transform:translateY('+(over?top-6:y)+'px)"><path class="w2" d="'+wave+'"/><path class="w1" d="'+wave+'" fill="url(#jwg)"/>'+bub.replace(/cy="(\d+)"/g,function(m,v){return 'cy="'+(+v*0.8)+'"';})+'</g>'+ticks+'</g>'+
-    '<path class="jo" d="'+body+'"/><path class="jin" d="'+body+'" transform="translate(60 80) scale(.955) translate(-60 -80)"/><path class="jbase" d="M33 134 Q36 137 46 137 H74 Q84 137 87 134"/><path class="jlip" d="M28 20 Q18 17 7 10 Q22 9 34 15"/><ellipse class="jrim" cx="60" cy="20" rx="32" ry="3.5"/>'+
+    '<path class="jo" d="'+body+'"/><path class="jin" d="'+body+'" transform="translate(60 80) scale(.955) translate(-60 -80)"/><path class="jbase" d="M33 134 Q36 137 46 137 H74 Q84 137 87 134"/><path class="jrim" d="M92 20 Q60 15 35 17 C27 16 18 13.5 11 13 C18 15.5 25 19 31 22 Q60 26.5 92 20"/><path class="jlip" d="M35 17 C27 16 18 13.5 11 13 C17 17 23 23 24 31"/>'+
     '<path class="jshine" d="M30 42 C25 62 25 98 31 122"/><path class="jshine s2" d="M38 34 C36 40 35 46 35 52"/>'+
     spill+'</svg><span class="jl"><b>'+(over?'+'+fmt.format(extra):fmt.format(ml))+'</b> '+(over?'ml de más':'ml')+'</span></div>';
 }

@@ -679,7 +679,7 @@ button.pill{appearance:none;background:transparent;cursor:pointer;font-family:va
 .jug .jo{fill:none;stroke:color-mix(in srgb,#BFD9F2 55%,var(--fg) 15%);stroke-opacity:.75;stroke-width:1.8;stroke-linejoin:round}
 .jug .jin{fill:none;stroke:#fff;stroke-opacity:.18;stroke-width:1}
 .jug .jbase{fill:none;stroke:#DCEBFA;stroke-opacity:.5;stroke-width:3;stroke-linecap:round}
-.jug .jlip{fill:none;stroke:color-mix(in srgb,#BFD9F2 55%,var(--fg) 15%);stroke-opacity:.75;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.jug .jlip{fill:none;stroke:color-mix(in srgb,#BFD9F2 55%,var(--fg) 15%);stroke-opacity:.75;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .jug .jrim{fill:none;stroke:#DCEBFA;stroke-opacity:.55;stroke-width:1.6}
 .jug .jh{fill:none;stroke:var(--surface);stroke-opacity:.92;stroke-width:6.5;stroke-linecap:round}
 .jug .jhw{fill:none;stroke:var(--c-l);stroke-width:6.5;stroke-linecap:round;opacity:.9}
