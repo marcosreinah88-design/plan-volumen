@@ -28,12 +28,33 @@ head='''<!doctype html>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Volumen">
-<style>html,body{margin:0}</style>
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#EEF1F3">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0E1113">
+%%SPLASHLINKS%%
+<script>try{var pvt=localStorage.getItem("pvm:theme");if(pvt==="light"||pvt==="dark")document.documentElement.setAttribute("data-theme",pvt);}catch(e){}</script>
+<style>html,body{margin:0}
+/* pantalla de carga: se ve mientras la app se arma y se quita sola al terminar */
+:root{--sp-bg:#0E1113;--sp-fg:#8C969E;--sp-tr:rgba(140,150,158,.22);--sp-ac:#6B93FF}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--sp-bg:#EEF1F3;--sp-fg:#55606A;--sp-tr:rgba(85,96,106,.18);--sp-ac:#2C5BE0}}
+:root[data-theme="light"]{--sp-bg:#EEF1F3;--sp-fg:#55606A;--sp-tr:rgba(85,96,106,.18);--sp-ac:#2C5BE0}
+html{background:var(--sp-bg)}
+#pvsp{position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;background:var(--sp-bg);color:var(--sp-fg);transition:opacity .35s ease,visibility .35s}
+#pvsp img{width:112px;height:112px;border-radius:25px;box-shadow:0 12px 32px rgba(0,0,0,.28)}
+#pvsp .sb{width:120px;height:3px;border-radius:3px;background:var(--sp-tr);overflow:hidden;position:relative}
+#pvsp .sb i{position:absolute;top:0;bottom:0;left:0;width:40%;border-radius:3px;background:var(--sp-ac);animation:pvsp 1.1s ease-in-out infinite}
+#pvsp p{margin:0;font:500 13px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.02em}
+#pvsp.out{opacity:0;visibility:hidden}
+@keyframes pvsp{from{transform:translateX(-100%)}to{transform:translateX(300%)}}
+@media (prefers-reduced-motion: reduce){#pvsp{transition:none}#pvsp .sb i{animation:none;width:100%;opacity:.5}}
+</style>
 </head>
 <body>
+<div id="pvsp" role="status" aria-live="polite"><img src="icons/icon-512.png" alt="" width="112" height="112"><div class="sb" aria-hidden="true"><i></i></div><p>Cargando…</p></div>
 '''
 tail='''
 <script>
+(function(){var s=document.getElementById("pvsp");if(!s)return;function fuera(){s.className="out";setTimeout(function(){if(s.parentNode)s.parentNode.removeChild(s);},450);}
+  if(window.requestAnimationFrame)requestAnimationFrame(function(){requestAnimationFrame(fuera);});else fuera();})();
 if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").then(function(r){r.update();}).catch(function(){});
   var reloaded=false;navigator.serviceWorker.addEventListener("controllerchange",function(){if(reloaded)return;reloaded=true;location.reload();});}
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(function(){});
@@ -41,6 +62,15 @@ if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catc
 </body>
 </html>
 '''
+# Pantalla de arranque del iPhone (apple-touch-startup-image): iOS la muestra al abrir la app instalada,
+# mientras llega la página (hasta 3 s con mala señal). Una por tamaño de iPhone, en claro y en oscuro.
+SPL=[(440,956,3),(420,912,3),(402,874,3),(430,932,3),(393,852,3),(428,926,3),(390,844,3),(375,812,3),(414,896,3),(414,896,2),(414,736,3),(375,667,2)]
+SPBG={'dark':'#0E1113','light':'#EEF1F3'}
+links=[]
+for w,h,r in SPL:
+    for m in ('dark','light'):
+        links.append('<link rel="apple-touch-startup-image" media="screen and (device-width: %dpx) and (device-height: %dpx) and (-webkit-device-pixel-ratio: %d) and (orientation: portrait) and (prefers-color-scheme: %s)" href="icons/splash/%s-%dx%d.png">'%(w,h,r,m,m,w*r,h*r))
+head=head.replace('%%SPLASHLINKS%%','\n'.join(links))
 # Seguridad: política de contenido (CSP). Solo corren los scripts de esta build (por su huella sha256);
 # cualquier código metido en la página no se ejecuta, y solo se puede hablar con GitHub.
 import re,base64
@@ -52,8 +82,9 @@ csp=("default-src 'none'; script-src "+" ".join(hashes)+"; style-src 'self' 'uns
      "font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://gist.githubusercontent.com https://generativelanguage.googleapis.com; "
      "manifest-src 'self'; worker-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'")
 html=html.replace('<meta charset="utf-8">','<meta charset="utf-8">\n<meta http-equiv="Content-Security-Policy" content="'+csp+'">\n<meta name="referrer" content="no-referrer">',1)
-assert html.count('Content-Security-Policy')==1 and len(hashes)==2,len(hashes)
+assert html.count('Content-Security-Policy')==1 and len(hashes)==3,len(hashes)
 open(out+'index.html','w',encoding='utf-8').write(html)
+ver=hashlib.sha1(html.encode()).hexdigest()[:10]  # incluye el <head>: cualquier cambio ahí también actualiza la app
 open(out+'manifest.webmanifest','w',encoding='utf-8').write(json.dumps({
  "name":"Plan de Volumen","short_name":"Volumen","start_url":"./","scope":"./","display":"standalone",
  "background_color":"#0E1113","theme_color":"#0E1113","lang":"es",
@@ -103,5 +134,15 @@ LOGO=base+'src/logo.png'
 for n in (180,192,512):
     if os.path.exists(LOGO):Image.open(LOGO).convert('RGB').resize((n,n),Image.LANCZOS).save(out+'icons/icon-%d.png'%n)
     else:icon(n)
+def rounded(im,rad):
+    S=im.size[0];k=4;mk=Image.new('L',(S*k,S*k),0);ImageDraw.Draw(mk).rounded_rectangle([0,0,S*k-1,S*k-1],rad*k,fill=255)
+    im=im.convert('RGBA');im.putalpha(mk.resize((S,S),Image.LANCZOS));return im
+os.makedirs(out+'icons/splash',exist_ok=True)
+src=Image.open(LOGO).convert('RGB') if os.path.exists(LOGO) else Image.open(out+'icons/icon-512.png').convert('RGB')
+for w,h,r in SPL:
+    W,H=w*r,h*r;L=112*r;lg=rounded(src.resize((L,L),Image.LANCZOS),25*r)
+    for m in ('dark','light'):
+        im=Image.new('RGB',(W,H),SPBG[m]);im.paste(lg,((W-L)//2,(H-L)//2-34*r),lg)
+        im.quantize(colors=128,method=Image.Quantize.MEDIANCUT).save(out+'icons/splash/%s-%dx%d.png'%(m,W,H),optimize=True)
 open(out+'.nojekyll','w').write('')
 print('pwa',ver,os.path.getsize(out+'index.html')//1024,'KB')
