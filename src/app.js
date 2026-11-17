@@ -549,12 +549,28 @@ function addWater(v){var dd=dayDoc(selDay),n=Math.max(0,Math.min(10000,waterMl(d
 /* jarra: se llena hacia la meta y se derrama cuando la pasas */
 function jugSVG(ml){
   var f=Math.min(1,ml/WGOAL),over=ml>WGOAL,top=26,bot=138,y=bot-f*(bot-top),extra=ml-WGOAL;
-  var body='M28 20 C24 34 18 46 18 70 C18 104 22 124 30 133 Q35 138 46 138 H74 Q85 138 90 133 C98 124 102 104 102 70 C102 46 96 34 92 20 Z';
+  var body='M11 13 C17 17 23 23 24 31 C20 44 18 54 18 70 C18 104 22 124 30 133 Q35 138 46 138 H74 Q85 138 90 133 C98 124 102 104 102 70 C102 46 96 34 92 20 Q60 15 35 17 C27 16 18 13.5 11 13 Z';
   var wave='M-80 0 Q-70 -4 -60 0 T-40 0 T-20 0 T0 0 T20 0 T40 0 T60 0 T80 0 T100 0 T120 0 T140 0 T160 0 V130 H-80 Z';
   var ticks=[1,2].map(function(n){var ty=bot-(n*1000/WGOAL)*(bot-top);return '<line class="jt" x1="84" x2="96" y1="'+ty+'" y2="'+ty+'"/>';}).join("");
   var bub=f>0.08?[[40,60,0],[62,85,.8],[78,45,1.6],[52,100,2.3]].map(function(b){return '<circle class="bub" cx="'+b[0]+'" cy="'+b[1]+'" r="'+(1.6+((b[0]%3)*.5))+'" style="animation-delay:'+b[2]+'s"/>';}).join(""):'';
-  var spill=over?'<g class="spill"><ellipse class="dome" cx="56" cy="22" rx="34" ry="5"/><path class="stream" d="M9 11 C-2 30 -2 80 2 146"/><circle class="drop d1" cx="1" cy="70" r="2.4"/><circle class="drop d2" cx="3" cy="100" r="2"/><circle class="drop d3" cx="0" cy="125" r="2.2"/><ellipse class="puddle" cx="26" cy="148" rx="'+Math.min(40,18+extra/40)+'" ry="4"/></g>':'';
-  return '<div class="jug'+(over?' over':'')+(f>=1?' full':'')+'" role="img" aria-label="Jarra de agua: '+fmt.format(ml)+' de '+fmt.format(WGOAL)+' ml'+(over?', te pasaste '+fmt.format(extra)+' ml':'')+'">'+
+  var mega=over&&extra>=1000,sp=function(c,x,y,r,dx,dy,dl){return '<circle class="'+c+'" cx="'+x+'" cy="'+y+'" r="'+r+'" style="--dx:'+dx+'px;--dy:'+dy+'px;animation-delay:'+dl+'s"/>';};
+  /* desborde: con poco de más el agua rebasa el pico en un chorro; con 1 litro o más se derrama por todos lados */
+  var spill=!over?'':mega?'<g class="spill mega">'+
+      '<path class="casc" d="M24 29 C19 44 15.5 54 15.5 70 C15.5 104 19 124 28 136"/><path class="casc" d="M93 19 C99 34 104.5 46 104.5 70 C104.5 104 101 124 92 136"/><path class="cflow" d="M24 29 C19 44 15.5 54 15.5 70 C15.5 104 19 124 28 136"/><path class="cflow c2" d="M93 19 C99 34 104.5 46 104.5 70 C104.5 104 101 124 92 136"/>'+
+      '<ellipse class="puddle" cx="55" cy="149" rx="'+Math.min(80,58+(extra-1000)/50)+'" ry="6.5"/><ellipse class="rip" cx="55" cy="149" rx="40" ry="4"/><ellipse class="rip r2" cx="-4" cy="149" rx="14" ry="2.5"/>'+
+      '<path class="crest" d="M9 13 Q14 4 26 6 Q34 -1 46 4 Q56 -3 66 3 Q78 -2 86 6 Q96 8 94 19 Q60 24 30 21 Q18 19 9 13 Z"/>'+
+      '<path class="strm big" d="M11 9 C-4 10 -13 44 -12 148 H-3 C-4 66 0 26 14 15 Z"/><path class="sflow" d="M7 12 C-3 20 -8 54 -7.5 142"/>'+
+      sp('spr',30,4,2,-6,-12,0)+sp('spr',60,1,1.8,3,-14,.4)+sp('spr',84,5,2.2,8,-10,.8)+sp('spr',46,2,1.5,-2,-16,1.2)+
+      sp('spl',-8,146,2.2,-14,-10,0)+sp('spl',-6,146,1.8,10,-13,.3)+sp('spl',22,146,2,-10,-9,.6)+sp('spl',90,146,2.2,14,-11,.15)+sp('spl',98,146,1.6,-8,-8,.5)+sp('spl',-4,146,1.6,-20,-6,.75)+
+    '</g>'
+    :'<g class="spill">'+
+      '<path class="crest" d="M11 13 Q15 9 28 8.5 Q60 5 87 12.5 Q95 15.5 92 19.5 Q60 23 30 21 Q19 18 11 13 Z"/>'+
+      '<path class="drip" d="M23 27 C20 36 18 46 17.6 58"/><circle class="dripd" cx="17.6" cy="60" r="1.8"/>'+
+      '<ellipse class="puddle" cx="16" cy="149" rx="'+Math.min(40,16+extra/30)+'" ry="4"/><ellipse class="rip" cx="0" cy="148" rx="12" ry="2.2"/>'+
+      '<path class="strm" d="M11 11 C2 14 -1.5 42 -1.2 147 H1.6 C1.8 62 4 24 13.5 15.5 Z"/><path class="sflow" d="M9 13.5 C2.5 22 0.3 52 0.2 142"/>'+
+      sp('spl',0,146,1.5,-8,-7,0)+sp('spl',1,146,1.3,7,-8,.35)+sp('spl',0,146,1.1,-4,-10,.7)+
+    '</g>';
+  return '<div class="jug'+(over?' over':'')+(mega?' mega':'')+(f>=1?' full':'')+'" role="img" aria-label="Jarra de agua: '+fmt.format(ml)+' de '+fmt.format(WGOAL)+' ml'+(over?', te pasaste '+fmt.format(extra)+' ml':'')+'">'+
     '<svg viewBox="-10 0 140 156" aria-hidden="true"><defs>'+
       '<clipPath id="jugclip"><path d="'+body+'"/></clipPath>'+
       '<linearGradient id="jwg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="wg0"/><stop offset="1" class="wg1"/></linearGradient>'+
@@ -564,7 +580,7 @@ function jugSVG(ml){
     '<path class="jh2" d="M97 40 C124 40 126 104 98 106"/><path class="jh" d="M97 40 C124 40 126 104 98 106"/><path class="jhw" clip-path="url(#jhclip)" d="M97 40 C124 40 126 104 98 106"/><path class="jhs" d="M108 50 C116 58 117 86 110 96"/>'+
     '<path class="jglass" d="'+body+'"/>'+
     '<g clip-path="url(#jugclip)"><g class="jw" style="transform:translateY('+(over?top-6:y)+'px)"><path class="w2" d="'+wave+'"/><path class="w1" d="'+wave+'" fill="url(#jwg)"/>'+bub.replace(/cy="(\d+)"/g,function(m,v){return 'cy="'+(+v*0.8)+'"';})+'</g>'+ticks+'</g>'+
-    '<path class="jo" d="'+body+'"/><path class="jin" d="'+body+'" transform="translate(60 80) scale(.955) translate(-60 -80)"/><path class="jbase" d="M33 134 Q36 137 46 137 H74 Q84 137 87 134"/><path class="jlip" d="M28 20 Q18 17 7 10 Q22 9 34 15"/><ellipse class="jrim" cx="60" cy="20" rx="32" ry="3.5"/>'+
+    '<path class="jo" d="'+body+'"/><path class="jin" d="'+body+'" transform="translate(60 80) scale(.955) translate(-60 -80)"/><path class="jbase" d="M33 134 Q36 137 46 137 H74 Q84 137 87 134"/><path class="jrim" d="M92 20 Q60 15 35 17 C27 16 18 13.5 11 13 C18 15.5 25 19 31 22 Q60 26.5 92 20"/><path class="jlip" d="M35 17 C27 16 18 13.5 11 13 C17 17 23 23 24 31"/>'+
     '<path class="jshine" d="M30 42 C25 62 25 98 31 122"/><path class="jshine s2" d="M38 34 C36 40 35 46 35 52"/>'+
     spill+'</svg><span class="jl"><b>'+(over?'+'+fmt.format(extra):fmt.format(ml))+'</b> '+(over?'ml de más':'ml')+'</span></div>';
 }
@@ -1262,7 +1278,7 @@ $("pgtan").addEventListener("submit",function(e){
 });
 /* ===== leer la hoja de la Tanita con IA (Gemini): la clave es de Marcos y vive solo en este equipo (pvmgem:key);
    la foto o el PDF van directo a Google y nada se guarda hasta que él revisa los números y toca "Guardar medición" ===== */
-var GEM={busy:false,msg:"",ok:false};
+var GEM={busy:false,msg:"",ok:false,chg:false,bad:false};
 var GEM_MODELS=["gemini-3.8-flash","gemini-3.5-flash","gemini-flash-latest"];
 var GEM_PROMPT="Eres un lector de reportes de composición corporal Tanita (por ejemplo MC-980, MC-780, BC-418). Lee el documento y devuelve SOLO un objeto JSON con estas claves. Usa null cuando el dato no aparezca; no inventes ni estimes nada. Números con punto decimal, sin unidades.\n"+
  "fecha: fecha de la medición en formato AAAA-MM-DD (o null)\n"+
@@ -1275,17 +1291,19 @@ var GEM_PROMPT="Eres un lector de reportes de composición corporal Tanita (por 
  "Si la hoja trae varias mediciones, usa la más reciente.";
 function gemKey(){try{return localStorage.getItem("pvmgem:key")||"";}catch(e){return "";}}
 function gemSetKey(v){try{if(v)localStorage.setItem("pvmgem:key",v);else localStorage.removeItem("pvmgem:key");}catch(e){}}
-function gemKeyCard(inForm){
-  return '<div class="ghs gfirst"><p class="small muted">'+(inForm?'Para que la IA lea tu hoja necesita una clave gratis de Google Gemini. Se pega una sola vez en cada equipo:':'Con una clave gratis de Google Gemini, la app lee la foto o el PDF de tu Tanita y llena la medición sola. Se pega una sola vez en cada equipo:')+'</p>'+
+function gemKeyCard(inForm,chg){
+  return '<div class="ghs gfirst"><p class="small muted">'+(chg?'Pega la clave nueva. Reemplaza a la que está guardada en este equipo:':inForm?'Para que la IA lea tu hoja necesita una clave gratis de Google Gemini. Se pega una sola vez en cada equipo:':'Con una clave gratis de Google Gemini, la app lee la foto o el PDF de tu Tanita y llena la medición sola. Se pega una sola vez en cada equipo:')+'</p>'+
     '<ol class="small"><li>Abre <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> con tu cuenta de Google y acepta los términos.</li><li>Toca <b>Create API key</b> (crear clave). Si te pide proyecto, deja el que te propone.</li><li>Copia la clave (empieza con <b>AQ.</b> o <b>AIza</b>) y pégala aquí. No pide tarjeta.</li></ol>'+
     '<div class="ghf"><input id="gemkey" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="AQ.… o AIza…" aria-label="Clave de Gemini"><button class="btn pri" type="button" data-gem="save">Guardar clave</button></div>'+
+    (chg?'<div class="gbtns"><button class="btn ghost" type="button" data-gem="cancel">Cancelar</button></div>':'')+
     '<p class="small muted">La clave se queda solo en este equipo. La hoja viaja directo a Google para leerla; en el plan gratis Google puede usar lo que le mandas para mejorar sus modelos.</p></div>';
 }
 function tanAiBox(){
   if(!gemKey())return gemKeyCard(true);
+  if(GEM.chg)return gemKeyCard(true,true);
   if(GEM.busy)return '<p class="small tai-st"><i class="tai-dot"></i>Leyendo tu hoja con Gemini…</p>';
   return (GEM.msg?'<p class="'+(GEM.ok?'note info':'note')+'">'+GEM.msg+'</p>':'<p class="small muted">Sube la foto o el PDF de tu hoja y la IA llena los campos. Tú revisas y guardas.</p>')+
-    '<div class="gbtns"><label class="btn ghost sm">'+(GEM.msg?'Escanear otra hoja':'Escanear hoja con IA')+'<input type="file" class="fpick" accept="image/*,application/pdf" data-tscan></label></div>';
+    '<div class="gbtns"><label class="btn ghost sm">'+(GEM.msg?'Escanear otra hoja':'Escanear hoja con IA')+'<input type="file" class="fpick" accept="image/*,application/pdf" data-tscan></label>'+(GEM.bad?'<button class="btn ghost sm" type="button" data-gem="chg">Cambiar clave</button>':'')+'</div>';
 }
 function tanAiPaint(){var b=$("t_ai");if(b)b.innerHTML=tanAiBox();}
 function b64OfBlob(f){return new Promise(function(ok,no){var r=new FileReader();r.onload=function(){var s=String(r.result||"");ok(s.slice(s.indexOf(",")+1));};r.onerror=function(){no(r.error);};r.readAsDataURL(f);});}
@@ -1315,7 +1333,7 @@ function gemAsk(key,part){
       if(r.ok)return j;
       var st=(j&&j.error&&j.error.status)||"",msg=String((j&&j.error&&j.error.message)||"");
       if((r.status===404||r.status>=500)&&i<GEM_MODELS.length-1){i++;return go();}
-      if(/API_KEY|API key/i.test(msg)||r.status===401||r.status===403)throw gemErr("Google no aceptó la clave. Revisa que la copiaste completa o crea otra en AI Studio.");
+      if(/API_KEY|API key/i.test(msg)||r.status===401||r.status===403){GEM.bad=true;throw gemErr("Google no aceptó la clave. Toca Cambiar clave y pega otra (revisa que la copiaste completa o crea otra en AI Studio).");}
       if(r.status===429||st==="RESOURCE_EXHAUSTED")throw gemErr("Se acabó el cupo gratis por ahora. Espera un minuto y vuelve a intentar.");
       if(r.status===400)throw gemErr("Gemini no pudo abrir ese archivo. Prueba con una foto (JPG o PNG) o el PDF original.");
       throw gemErr(r.status>=500?"Gemini está saturado en este momento. Intenta de nuevo en unos minutos.":"Gemini no respondió bien ("+r.status+"). Intenta de nuevo en un rato.");
@@ -1358,7 +1376,7 @@ function tanScan(f){
   if(f.size>15*1024*1024){toast("El archivo pesa demasiado (máx. 15 MB)");return;}
   var key=gemKey();if(!key){tanForm=true;renderTanita();return;}
   if(GEM.busy)return;
-  GEM.busy=true;GEM.msg="";GEM.ok=false;
+  GEM.busy=true;GEM.msg="";GEM.ok=false;GEM.bad=false;
   if(!tanForm||!$("tf")){tanForm=true;renderTanita();}else tanAiPaint();
   gemPart(f).then(function(p){return gemAsk(key,p);}).then(function(o){
     var x=gemClean(o);GEM.busy=false;
@@ -1370,14 +1388,17 @@ function tanScan(f){
 }
 $("pgtan").addEventListener("change",function(e){var t=e.target;if(!t.matches||!t.matches("[data-tscan]"))return;var f=t.files&&t.files[0];t.value="";tanScan(f);});
 /* la caja de la clave va dentro del formulario de la medición, por eso no es un <form> propio: se guarda con el botón o con Enter */
-function gemSaveKey(){var v=($("gemkey").value||"").trim();
-  if(!/^[A-Za-z0-9_.\-]{30,120}$/.test(v)){toast("Esa clave no se ve completa");return;}
-  gemSetKey(v);GEM.msg="";toast("Clave de Gemini guardada");
+/* se quitan espacios, saltos de línea y comillas que a veces se pegan al copiar desde AI Studio o desde Notas */
+function gemSaveKey(){var v=($("gemkey").value||"").replace(/[\s"'`\u200b-\u200d\u2060\ufeff\u2018\u2019\u201c\u201d]/g,"");
+  if(!v){toast("Pega la clave primero");return;}
+  if(!/^[A-Za-z0-9_.\-]{20,300}$/.test(v)){toast(v.length<20?"Esa clave no se ve completa":"Esa clave trae caracteres raros. Cópiala otra vez desde AI Studio");return;}
+  var had=!!gemKey();gemSetKey(v);GEM.msg="";GEM.chg=false;GEM.bad=false;toast(had?"Clave de Gemini cambiada":"Clave de Gemini guardada");
   if(view==="ajustes")renderAjustes();else if($("tf"))tanAiPaint();else renderTanita();}
 document.addEventListener("keydown",function(e){if(e.key==="Enter"&&e.target&&e.target.id==="gemkey"){e.preventDefault();gemSaveKey();}});
 document.addEventListener("click",function(e){var b=e.target.closest("[data-gem]");if(!b)return;
   if(b.dataset.gem==="save"){gemSaveKey();return;}
-  if(b.dataset.gem==="off"){if(b.dataset.arm!=="1"){b.dataset.arm="1";b.textContent="¿Seguro? Toca otra vez";return;}gemSetKey("");toast("Clave borrada de este equipo");renderAjustes();}});
+  if(b.dataset.gem==="chg"||b.dataset.gem==="cancel"){GEM.chg=b.dataset.gem==="chg";if(view==="ajustes")renderAjustes();else tanAiPaint();if(GEM.chg){var k=$("gemkey");if(k)k.focus();}return;}
+  if(b.dataset.gem==="off"){if(b.dataset.arm!=="1"){b.dataset.arm="1";b.textContent="¿Seguro? Toca otra vez";return;}gemSetKey("");GEM.chg=false;GEM.bad=false;toast("Clave borrada de este equipo");renderAjustes();}});
 /* ===== estadística por ejercicio: se arma con las series guardadas en cada día ===== */
 var HIST={loaded:false,loading:false},exMet="top",exStat=null;
 try{exStat=localStorage.getItem("pvm:exstat");exMet=localStorage.getItem("pvm:exmet")||"top";}catch(e){}
@@ -1856,7 +1877,7 @@ function ghCard(){
   return '<div class="ghs gfirst">'+(GH.err?'<p class="note">'+GH.err+'</p>':'<p class="small" style="color:var(--ok)">Conectado'+(L?' · última vez '+pad(new Date(L).getHours())+':'+pad(new Date(L).getMinutes()):'')+'</p>')+
     '<p class="small muted">Se sincroniza solo cada vez que anotas algo y al abrir la app. Tus datos viajan y se guardan en GitHub cifrados con tu clave.</p>'+(GH.dec?'<div class="gbtns"><button class="btn ghost" type="button" data-gh="reset">Reemplazar con los datos de este equipo</button></div>':'')+'<div class="gbtns"><button class="btn ghost" type="button" data-gh="now">Sincronizar ahora</button><button class="btn ghost" type="button" data-gh="off">Desconectar</button></div>'+ghLogHTML()+'</div>';
 }
-document.addEventListener("submit",function(e){if(e.target.id!=="ghf")return;e.preventDefault();var v=($("ghtok").value||"").trim();
+document.addEventListener("submit",function(e){if(e.target.id!=="ghf")return;e.preventDefault();var v=($("ghtok").value||"").replace(/[\s"'`\u200b-\u200d\u2060\ufeff]/g,"");
   if(!/^(ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{50,100})$/.test(v)){toast("Esa no parece una clave de GitHub (empieza con ghp_)");return;}
   $("ghtok").value="";ghSet("tok",v);ghSet("id","");ftReset();GH.err="";GH.dec=0;GH.busy=0;ghLog("conectar");ghPersist();renderBackup();ghSync(true);});
 document.addEventListener("click",function(e){var b=e.target.closest("[data-gh]");if(!b)return;
@@ -2095,7 +2116,7 @@ function renderAjustes(){
   if(PWA){
     h+=ajRow("Sincronización",ghOn()?"Conectada":"Apagada",ghCard(true));
     h+=ajRow("Avisos",avOn()?"Activos aquí":"",avCard()+'<div class="ghs"><h4>Qué avisos quieres</h4><p class="small muted">Vale para todos tus equipos.</p><div class="avcats">'+AVCAT.map(function(c){var on=avCatOn(c[0]);return '<button type="button" class="avcat" data-avc="'+c[0]+'" aria-pressed="'+on+'"><span class="sw" aria-hidden="true"><i></i></span><span><b>'+c[1]+'</b><small>'+c[2]+'</small></span></button>';}).join("")+'</div></div>');
-    h+=ajRow("IA para la Tanita",gemKey()?"Lista":"",gemKey()?'<p class="small muted">La clave de Gemini está guardada en este equipo. En Progreso → Cuerpo toca <b>Escanear hoja con IA</b> y sube la foto o el PDF de tu Tanita.</p><div class="gbtns"><button class="btn ghost" type="button" data-gem="off">Borrar clave</button></div>':gemKeyCard(false));
+    h+=ajRow("IA para la Tanita",gemKey()?"Lista":"",gemKey()&&GEM.chg?gemKeyCard(false,true):gemKey()?'<p class="small muted">La clave de Gemini está guardada en este equipo. En Progreso → Cuerpo toca <b>Escanear hoja con IA</b> y sube la foto o el PDF de tu Tanita.</p><div class="gbtns"><button class="btn ghost" type="button" data-gem="chg">Cambiar clave</button><button class="btn ghost" type="button" data-gem="off">Borrar clave</button></div>':gemKeyCard(false));
     h+='<div class="card" id="pgbk" style="display:grid;gap:10px"></div>';
   }
   h+=ajRow("Unidades y apariencia","",'<div class="ajl"><span><b>Peso corporal</b><small>Las cargas del gym siempre van en lb</small></span>'+seg("data-ajbw",C.bw==="lb"?"lb":"kg",[["kg","kg"],["lb","lb"]])+'</div>'+
